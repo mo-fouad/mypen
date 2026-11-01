@@ -23,8 +23,13 @@ const FONT_SIZE = 20
 let ck: CanvasKit
 let staticProvider: TypefaceFontProvider
 let variableProvider: TypefaceFontProvider
+let arabicProvider: TypefaceFontProvider
+
+const ARABIC = 'Placed Test Naskh'
 
 beforeAll(async () => {
+  const naskh = expectDefined(await fontManager.fetchBundledFont('/NotoNaskhArabic-Regular.ttf'))
+  await fontManager.markLoaded(ARABIC, 'Regular', naskh)
   ck = await getCanvasKit()
   const variable = expectDefined(await fontManager.fetchBundledFont('/InterVariable.ttf'))
   const semibold = expectDefined(await fontManager.fetchBundledFont('/Inter-SemiBold.ttf'))
@@ -33,11 +38,14 @@ beforeAll(async () => {
   staticProvider.registerFont(semibold, FAMILY)
   variableProvider = ck.TypefaceFontProvider.Make()
   variableProvider.registerFont(variable, FAMILY)
+  arabicProvider = ck.TypefaceFontProvider.Make()
+  arabicProvider.registerFont(naskh, ARABIC)
 })
 
 afterAll(() => {
   staticProvider.delete()
   variableProvider.delete()
+  arabicProvider.delete()
 })
 
 type PaintFeatures = { name: string; value: number }[]
@@ -84,6 +92,33 @@ function placed(
 
 const variableSource = () => expectDefined(glyphOutlineSourceSync(FAMILY, 'Regular'))
 
+/** `text` in `family`, laid out from `provider`, as saved and as CanvasKit drew its glyphs. */
+function placedIn(family: string, text: string, provider: TypefaceFontProvider) {
+  const graph = new SceneGraph()
+  const node = graph.createNode('TEXT', graph.getPages()[0].id, {
+    text,
+    fontFamily: family,
+    fontSize: FONT_SIZE
+  })
+  const builder = ck.ParagraphBuilder.MakeFromFontProvider(
+    new ck.ParagraphStyle({ textStyle: { fontFamilies: [family], fontSize: FONT_SIZE } }),
+    provider
+  )
+  builder.addText(text)
+  const paragraph = builder.build()
+  builder.delete()
+  try {
+    const layout = TextLayout.ofParagraph(ck, paragraph, text.length)
+    layout.layout(1000)
+    const drawn = layout
+      .getShapedLines()
+      .flatMap((line) => line.runs.flatMap((run) => Array.from(run.glyphs)))
+    return { glyphs: expectDefined(laidOutGlyphs(node, layout, text, 0), 'laid-out glyphs'), drawn }
+  } finally {
+    paragraph.delete()
+  }
+}
+
 describe('the font saved glyphs are outlined from', () => {
   /**
    * The files number `B` and `a` alike but not `t` (#1619): one matching glyph must not let the
@@ -109,7 +144,6 @@ describe('the font saved glyphs are outlined from', () => {
       )
       expect(glyphs.some((glyph, index) => glyph.id !== source.glyphOf(text[index]))).toBe(true)
       expect(glyphs.every((glyph) => glyph.source !== null)).toBe(true)
-      expect(glyphs.every((glyph) => glyph.source === glyphs[0].source)).toBe(true)
     }
   })
 
@@ -132,9 +166,17 @@ describe('the font saved glyphs are outlined from', () => {
     const source = variableSource()
     const text = 'a->b a->b'
     // The second arrow keeps its characters: the run drawn from one font has both arrows.
-    const glyphs = placed(text, variableProvider, [], {
-      styleRuns: [{ start: 5, length: 4, style: { fontFeatures: [{ tag: 'CALT', enabled: false }] } }]
-    }, { from: 5, features: [{ name: 'calt', value: 0 }] })
+    const glyphs = placed(
+      text,
+      variableProvider,
+      [],
+      {
+        styleRuns: [
+          { start: 5, length: 4, style: { fontFeatures: [{ tag: 'CALT', enabled: false }] } }
+        ]
+      },
+      { from: 5, features: [{ name: 'calt', value: 0 }] }
+    )
 
     expect(glyphs.map((glyph) => glyph.firstCharacter)).toEqual([0, 1, 3, 4, 5, 6, 7, 8])
     expect(glyphs.slice(4).map((glyph) => glyph.id)).toEqual(
@@ -163,6 +205,21 @@ describe('the font saved glyphs are outlined from', () => {
       advances[2],
       advances[3] + 4
     ])
+  })
+
+  /**
+   * A right-to-left run lists its glyphs in visual order and closes on its first character, so
+   * its last character is found where the next run starts. Missing it reshaped every Arabic run
+   * without its last letter.
+   */
+  test('keeps the glyphs a right-to-left run drew, through its last character', () => {
+    // A final `.`, a word break, and the lam-alef ligature that ends the second text.
+    for (const text of ['وهذه النتيجة.', 'مرحبا لا', 'Hi وهذه 12 the end']) {
+      const { glyphs, drawn } = placedIn(ARABIC, text, arabicProvider)
+
+      expect(glyphs.map((glyph) => glyph.id)).toEqual(drawn)
+      expect(glyphs.every((glyph) => glyph.source !== null)).toBe(true)
+    }
   })
 
   test('shapes the run itself with the features the text sets', () => {

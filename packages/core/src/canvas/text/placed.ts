@@ -277,13 +277,15 @@ function runOutline(
   node: SceneNode,
   shaped: string,
   run: GlyphRun,
-  characterAt: (offset: number) => number,
-  sourceAt: (index: number) => number
+  indices: TextIndices
 ): RunOutline | null {
   if (run.glyphs.length === 0) return null
+  const { characterAt, sourceAt } = indices
   const offsets = Array.from(run.offsets, characterAt)
   const start = Math.min(...offsets)
-  const end = Math.max(...offsets)
+  // The offset after the last glyph closes a left-to-right run, but a right-to-left one, its
+  // glyphs in visual order, on its first character, so the run ends where the text's next does.
+  const end = indices.runEnd(Math.max(...offsets.slice(0, run.glyphs.length)))
   // A glyph covers the characters up to the next greater offset in the run, whatever its
   // direction; the sorted offsets give that once for every glyph.
   const boundaries = uniq([...offsets, end]).sort((a, b) => a - b)
@@ -374,6 +376,35 @@ function ellipsisSource(
   return null
 }
 
+/** Where the characters of laid-out text are, by the UTF-8 offsets its runs give. */
+interface TextIndices {
+  /** The character of the shown text at a run's UTF-8 offset. */
+  characterAt: (offset: number) => number
+  /** The character of the node's own text a shown character comes from. */
+  sourceAt: (index: number) => number
+  /** Where the characters of a run whose last glyph starts at `lastStart` end. */
+  runEnd: (lastStart: number) => number
+}
+
+/**
+ * Where each run of `text` ends: where the next run starts, by the first characters of every
+ * run's glyphs and the offsets that close them, and at the latest at a line break or the text's end.
+ */
+function runEnds(
+  lines: ReadonlyArray<{ runs: readonly GlyphRun[] }>,
+  characterAt: (offset: number) => number,
+  text: string
+): (lastStart: number) => number {
+  const starts = uniq(
+    lines.flatMap((line) => line.runs.flatMap((run) => Array.from(run.offsets, characterAt)))
+  ).sort((a, b) => a - b)
+  return (lastStart) => {
+    const next = starts.find((start) => start > lastStart) ?? text.length
+    const lineBreak = text.slice(lastStart + 1, next).search(/[\n\r\u2028\u2029]/)
+    return lineBreak === -1 ? next : lastStart + 1 + lineBreak
+  }
+}
+
 /**
  * The outline of a run of a line, and whether the run is the ellipsis that ends truncated text.
  * The last run of truncated text that no font confirms may be an ellipsis, which keeps its glyph
@@ -384,12 +415,12 @@ function lineRunOutline(
   shaped: string,
   run: GlyphRun,
   endsTruncated: boolean,
-  indices: { characterAt: (offset: number) => number; sourceAt: (index: number) => number }
+  indices: TextIndices
 ): { outline: RunOutline | null; ellipsis: boolean } {
   const { characterAt, sourceAt } = indices
   const ellipsis = endsTruncated ? ellipsisSource(node, run, characterAt, sourceAt) : null
   if (ellipsis) return { outline: { source: ellipsis }, ellipsis: true }
-  const outline = runOutline(node, shaped, run, characterAt, sourceAt)
+  const outline = runOutline(node, shaped, run, indices)
   return { outline: endsTruncated && outline?.glyphs ? null : outline, ellipsis: false }
 }
 
@@ -497,6 +528,7 @@ export function laidOutGlyphs(
   // The runs drew the text as laid out, a keycap mark as a zero-width space.
   const shaped = laidOutText(text)
   const sourceAt = sourceIndices(node, text)
+  const runEnd = runEnds(lines, characterAt, text)
   const markers = new Map(layout.getMarkers().map((marker) => [marker.lineNumber, marker]))
   const glyphs: LaidOutGlyph[] = []
   for (const [lineIndex, line] of lines.entries()) {
@@ -509,7 +541,8 @@ export function laidOutGlyphs(
         lastLine && runIndex === line.runs.length - 1 && layout.didExceedMaxLines()
       const { outline, ellipsis } = lineRunOutline(node, shaped, run, endsTruncated, {
         characterAt,
-        sourceAt
+        sourceAt,
+        runEnd
       })
       // Run positions round the baseline to whole pixels; line metrics keep it exact.
       const y = baseline + offsetY
