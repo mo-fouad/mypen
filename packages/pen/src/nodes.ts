@@ -151,7 +151,7 @@ const STROKE_WRITES = [
  * the layer's own fields maps to none: bookkeeping, the decorations pen.dev does not draw, and an
  * icon's glyph, which is the layer's children or the component it shows.
  */
-const PROPERTY_FIELDS = {
+export const PROPERTY_FIELDS = {
   name: ['name'],
   context: [],
   x: PLACEMENT_FIELDS,

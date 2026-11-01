@@ -231,4 +231,7 @@ export type PenEffect = v.InferOutput<typeof effectSchema>
 export type PenSides = v.InferOutput<typeof sidesSchema>
 export type PenNumber = v.InferOutput<typeof numSchema>
 
-export const penFileSchema = v.pipe(v.string(), v.parseJson(), penDocumentSchema)
+/** A `.pen` file's JSON as written, its objects' keys in the file's order, before validation. */
+export const penJSONSchema = v.pipe(v.string(), v.parseJson(), v.record(v.string(), v.unknown()))
+
+export type PenJSON = Record<string, unknown>

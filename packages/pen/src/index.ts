@@ -16,3 +16,9 @@ export {
   type PenReadOptions
 } from './read'
 export type { PenDocument, PenNode, PenOverride } from './schema'
+export {
+  writePenDocument,
+  writePenFile,
+  type PenWriteIssue,
+  type PenWriteResult
+} from './write/write'

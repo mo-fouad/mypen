@@ -10,8 +10,9 @@ import { spreadAround } from './layout'
 import { upgradeLegacyNodes } from './legacy'
 import { createSceneNode, redrawIconAtLaidOutSize, type Build, type PenIconSource } from './nodes'
 import { placeLayers } from './placement'
-import { penFileSchema, type PenDocument, type PenNode } from './schema'
+import { penDocumentSchema, penJSONSchema, type PenDocument, type PenNode } from './schema'
 import { buildVarContext } from './variables'
+import { recordPenSource, rememberFileJSON } from './write/source'
 
 /** Options for reading a document. */
 export interface PenReadOptions {
@@ -70,11 +71,14 @@ function drawAtFinalSize(build: Build, laidOut: boolean): void {
 
 /** A `.pen` document's JSON, validated; throws for text that is not one. */
 export function parsePenDocument(json: string): PenDocument {
-  const parsed = v.safeParse(penFileSchema, json)
+  const file = v.safeParse(penJSONSchema, json)
+  const parsed = file.success ? v.safeParse(penDocumentSchema, file.output) : file
   if (!parsed.success) {
     throw new Error(`Not a .pen document: ${v.summarize(parsed.issues)}`)
   }
-  return upgradeLegacyNodes(parsed.output)
+  const doc = upgradeLegacyNodes(parsed.output)
+  if (file.success) rememberFileJSON(doc, file.output)
+  return doc
 }
 
 /** Builds the scene graph of a document `parsePenDocument` read. */
@@ -120,6 +124,7 @@ export function buildPenGraph(doc: PenDocument, options: PenReadOptions = {}): S
     graph.addPage('Page 1')
   }
 
+  recordPenSource(graph, doc, page.id)
   return graph
 }
 
