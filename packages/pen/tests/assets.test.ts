@@ -63,6 +63,27 @@ describe('penAssets', () => {
     })
   })
 
+  test('lists the icons 2.8 icon font layers name', () => {
+    const doc = parsePenDocument(
+      JSON.stringify({
+        version: '2.8',
+        children: [
+          { id: 'a', type: 'icon_font', iconFontFamily: 'lucide', iconFontName: 'heart' },
+          {
+            id: 'b',
+            type: 'icon_font',
+            iconFontFamily: 'Material Symbols Rounded',
+            iconFontName: 'home'
+          }
+        ]
+      })
+    )
+    expect(penAssets(doc).icons).toEqual([
+      { name: 'lucide:heart' },
+      { name: 'material-symbols-rounded:home', options: { wght: 200 } }
+    ])
+  })
+
   test('lists an icon whose weight variable holds no number at the default weight', () => {
     const doc = parsePenDocument(
       JSON.stringify({
@@ -252,6 +273,19 @@ describe('parsePenFile — icons', () => {
     const { graph, calls, icon } = drawn({})
     expect(calls).toEqual([{ name: 'lucide:heart', size: 30, color: { r: 0.8, g: 0, b: 0, a: 1 } }])
     expect(icon.fills).toEqual([])
+    expect(graph.getChildren('icon').map((glyph) => [glyph.x, glyph.y])).toEqual([[33, 0]])
+  })
+
+  test('draws a 2.8 icon font layer as the icon it names, not as text', () => {
+    const { graph, calls, icon } = drawn({
+      type: 'icon_font',
+      library: undefined,
+      icon: undefined,
+      iconFontFamily: 'lucide',
+      iconFontName: 'heart'
+    })
+    expect(icon.type).toBe('FRAME')
+    expect(calls).toEqual([{ name: 'lucide:heart', size: 30, color: { r: 0.8, g: 0, b: 0, a: 1 } }])
     expect(graph.getChildren('icon').map((glyph) => [glyph.x, glyph.y])).toEqual([[33, 0]])
   })
 

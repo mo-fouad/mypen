@@ -7,6 +7,7 @@ import { removeUnusedIconComponents } from './icons'
 import { createImageStore } from './images'
 import { inAncestorThemes, populateInstances } from './instances'
 import { spreadAround } from './layout'
+import { upgradeLegacyNodes } from './legacy'
 import { createSceneNode, redrawIconAtLaidOutSize, type Build, type PenIconSource } from './nodes'
 import { placeLayers } from './placement'
 import { penFileSchema, type PenDocument, type PenNode } from './schema'
@@ -73,7 +74,7 @@ export function parsePenDocument(json: string): PenDocument {
   if (!parsed.success) {
     throw new Error(`Not a .pen document: ${v.summarize(parsed.issues)}`)
   }
-  return parsed.output
+  return upgradeLegacyNodes(parsed.output)
 }
 
 /** Builds the scene graph of a document `parsePenDocument` read. */
