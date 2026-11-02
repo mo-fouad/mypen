@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { tv } from 'tailwind-variants'
-import { computed } from 'vue'
 
 import brandMarkTheme from '@/theme/brand'
 
@@ -8,31 +7,17 @@ import type { BrandMarkProps } from './types'
 
 const brandMark = tv(brandMarkTheme)
 
-const {
-  variant = 'micro',
-  appearance = 'light',
-  decorative = false,
-  class: className
-} = defineProps<BrandMarkProps>()
+const { decorative = false, class: className } = defineProps<BrandMarkProps>()
 
-const sources = {
-  mark: 'mark',
-  micro: 'mark-micro',
-  mono: 'mark-mono',
-  'app-icon': 'app-icon'
-} as const
-const source = computed(() => {
-  // The ivory tile owns its background and always uses the light palette.
-  const suffix = variant !== 'app-icon' && appearance === 'dark' ? '-dark' : ''
-  return `/brand/${sources[variant]}${suffix}.svg`
-})
+// MyPen: one raster logo for every variant and appearance.
+const source = '/mypen/mark.png'
 </script>
 
 <template>
   <img
     :src="source"
     :class="brandMark({ class: className })"
-    :alt="decorative ? '' : 'OpenPencil'"
+    :alt="decorative ? '' : 'MyPen'"
     width="16"
     height="16"
   />
