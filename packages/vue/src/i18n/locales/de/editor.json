@@ -13,5 +13,7 @@
   "previewing": "Vorschau",
   "resetPreview": "Zurücksetzen",
   "leavePreview": "Vorschau verlassen ({shortcut})",
-  "startPreview": "Vorschau ({shortcut})"
+  "startPreview": "Vorschau ({shortcut})",
+  "hideRightPanel": "Rechtes Panel ausblenden",
+  "showRightPanel": "Rechtes Panel einblenden"
 }

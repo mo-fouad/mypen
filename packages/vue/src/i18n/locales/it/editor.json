@@ -13,5 +13,7 @@
   "previewing": "Anteprima",
   "resetPreview": "Ripristina",
   "leavePreview": "Esci dall’anteprima ({shortcut})",
-  "startPreview": "Anteprima ({shortcut})"
+  "startPreview": "Anteprima ({shortcut})",
+  "hideRightPanel": "Nascondi pannello destro",
+  "showRightPanel": "Mostra pannello destro"
 }

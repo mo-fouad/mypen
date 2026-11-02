@@ -13,5 +13,7 @@
   "previewing": "Podgląd",
   "resetPreview": "Resetuj",
   "leavePreview": "Zakończ podgląd ({shortcut})",
-  "startPreview": "Podgląd ({shortcut})"
+  "startPreview": "Podgląd ({shortcut})",
+  "hideRightPanel": "Ukryj prawy panel",
+  "showRightPanel": "Pokaż prawy panel"
 }

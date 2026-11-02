@@ -13,5 +13,7 @@
   "previewing": "Vista previa",
   "resetPreview": "Restablecer",
   "leavePreview": "Salir de la vista previa ({shortcut})",
-  "startPreview": "Vista previa ({shortcut})"
+  "startPreview": "Vista previa ({shortcut})",
+  "hideRightPanel": "Ocultar panel derecho",
+  "showRightPanel": "Mostrar panel derecho"
 }

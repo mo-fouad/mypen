@@ -13,5 +13,7 @@
   "previewing": "プレビュー中",
   "resetPreview": "リセット",
   "leavePreview": "プレビューを終了 ({shortcut})",
-  "startPreview": "プレビュー ({shortcut})"
+  "startPreview": "プレビュー ({shortcut})",
+  "hideRightPanel": "右パネルを隠す",
+  "showRightPanel": "右パネルを表示"
 }

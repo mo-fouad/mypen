@@ -25,7 +25,9 @@ export const editorMessageDefaults = {
   previewing: 'Previewing',
   startPreview: params('Preview ({shortcut})'),
   resetPreview: 'Reset',
-  leavePreview: params('Leave preview ({shortcut})')
+  leavePreview: params('Leave preview ({shortcut})'),
+  hideRightPanel: 'Hide right panel',
+  showRightPanel: 'Show right panel'
 } as const
 
 export const editorMessages = i18n('editor', editorMessageDefaults)

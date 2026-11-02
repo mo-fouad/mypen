@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
 import { tv } from 'tailwind-variants'
-import { computed } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 
 import { resolveEditorProfile } from '@open-pencil/core'
 import { formatShortcut } from '@open-pencil/vue/editor/commands'
@@ -58,6 +58,17 @@ function saveResizedLayout(layout: number[]) {
   editorLayout = layout
   saveEditorLayout(layout)
 }
+/** The right panel's share of the window when it last stood open, which showing it again restores. */
+const RIGHT_PANEL_FALLBACK = 20
+const rightPanel = useTemplateRef('rightPanel')
+const rightPanelCollapsed = ref(editorLayout[2] === 0)
+let rightPanelOpenSize = editorLayout[2] > 0 ? editorLayout[2] : RIGHT_PANEL_FALLBACK
+function rememberRightPanelSize(size: number) {
+  if (size > 0) rightPanelOpenSize = size
+}
+function showRightPanel() {
+  rightPanel.value?.resize(rightPanelOpenSize)
+}
 const horizontalSplitterStyles = tv(splitterTheme)({ direction: 'horizontal' })
 /**
  * A canvas whose view hides the panels takes the whole window when it is the only one shown, in the
@@ -103,6 +114,15 @@ const { pending: roomPending } = useRoomActions()
         <CanvasSplitRoot />
         <ActiveRoomOverlay />
         <EditorToolbar />
+        <IconButton
+          v-if="rightPanelCollapsed"
+          :label="editor.showRightPanel"
+          class="absolute top-7 right-1.5 z-10 bg-panel"
+          data-test-id="editor-show-right-panel"
+          @click="showRightPanel"
+        >
+          <icon-lucide-panel-right-open class="size-3.5" />
+        </IconButton>
       </div>
     </SplitterPanel>
     <SplitterResizeHandle
@@ -113,10 +133,16 @@ const { pending: roomPending } = useRoomActions()
     </SplitterResizeHandle>
     <SplitterPanel
       id="properties"
+      ref="rightPanel"
       :default-size="editorLayout[2]"
       :min-size="10"
       :max-size="30"
+      collapsible
+      :collapsed-size="0"
       class="flex flex-col"
+      @resize="rememberRightPanelSize"
+      @collapse="rightPanelCollapsed = true"
+      @expand="rightPanelCollapsed = false"
     >
       <div class="flex shrink-0 items-center gap-1 border-b border-border px-1.5 py-1.5">
         <CollabPanel class="min-w-0 flex-1" />
@@ -130,6 +156,13 @@ const { pending: roomPending } = useRoomActions()
           @click="store.startPlay()"
         >
           <icon-lucide-play class="size-3.5" />
+        </IconButton>
+        <IconButton
+          :label="editor.hideRightPanel"
+          data-test-id="editor-hide-right-panel"
+          @click="rightPanel?.collapse()"
+        >
+          <icon-lucide-panel-right-close class="size-3.5" />
         </IconButton>
       </div>
       <PropertiesPanel />

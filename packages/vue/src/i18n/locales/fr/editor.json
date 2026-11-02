@@ -13,5 +13,7 @@
   "previewing": "Aperçu",
   "resetPreview": "Réinitialiser",
   "leavePreview": "Quitter l’aperçu ({shortcut})",
-  "startPreview": "Aperçu ({shortcut})"
+  "startPreview": "Aperçu ({shortcut})",
+  "hideRightPanel": "Masquer le panneau de droite",
+  "showRightPanel": "Afficher le panneau de droite"
 }

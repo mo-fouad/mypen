@@ -13,5 +13,7 @@
   "previewing": "预览中",
   "resetPreview": "重置",
   "leavePreview": "退出预览 ({shortcut})",
-  "startPreview": "预览 ({shortcut})"
+  "startPreview": "预览 ({shortcut})",
+  "hideRightPanel": "隐藏右侧面板",
+  "showRightPanel": "显示右侧面板"
 }

@@ -13,5 +13,7 @@
   "previewing": "Просмотр",
   "resetPreview": "Сбросить",
   "leavePreview": "Выйти из просмотра ({shortcut})",
-  "startPreview": "Просмотр ({shortcut})"
+  "startPreview": "Просмотр ({shortcut})",
+  "hideRightPanel": "Скрыть правую панель",
+  "showRightPanel": "Показать правую панель"
 }
