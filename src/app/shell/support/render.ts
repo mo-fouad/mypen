@@ -40,7 +40,7 @@ export function renderSupportNotice(notice: SupportNotice, doc: Document = docum
   container.setAttribute('role', 'alert')
 
   const icon = doc.createElement('img')
-  icon.src = '/brand/app-icon.svg'
+  icon.src = '/mypen/mark.png'
   icon.alt = ''
   icon.width = 40
   icon.height = 40

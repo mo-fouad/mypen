@@ -38,7 +38,7 @@ body {
   content: '';
   width: 40px;
   height: 40px;
-  background: url('/brand/app-icon.svg') center / contain no-repeat;
+  background: url('/mypen/mark.png') center / contain no-repeat;
 }
 #boot-splash .bar {
   position: absolute;
