@@ -191,12 +191,13 @@ function formattedDate(updatedAt: string): string {
 <template>
   <HomeLayout data-test-id="recent-files-home">
     <template #sidebar>
+      <!-- MyPen hides storage buckets; files open and save locally. -->
       <HomeSidebar
         :cloud="CLOUD_INCLUDED"
         :active="places.active.value"
         :account="places.account.value"
         :workspaces="places.workspaces.value"
-        :storage="sidebarStorage"
+        :storage="null"
         @select="places.select"
         @connect="places.connect"
         @open-account="places.openAccount"
@@ -212,7 +213,7 @@ function formattedDate(updatedAt: string): string {
         :active="places.active.value"
         :account="places.account.value"
         :workspaces="places.workspaces.value"
-        :storage="sidebarStorage"
+        :storage="null"
         @select="places.select"
         @connect="places.connect"
         @new-workspace="places.newWorkspace"

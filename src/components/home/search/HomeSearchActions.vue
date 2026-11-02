@@ -25,6 +25,8 @@ const CREATE_CHOICES = [
   { kind: 'design', label: 'createDesign', icon: IconLucidePenTool },
   { kind: 'board', label: 'createBoard', icon: IconLucideStickyNote }
 ] as const satisfies ReadonlyArray<{ kind: DocumentKind; label: string; icon: unknown }>
+/** MyPen opens existing files only: an AI assistant makes the designs, and rooms are not used. */
+const OPEN_ONLY = true
 const query = defineModel<string>({ required: true })
 const { menu, files } = useI18n()
 const { isMobile, isTouch } = useViewportKind()
@@ -66,13 +68,13 @@ watch(
       class="md:flex-1"
       size="md"
       :density="isTouch ? 'comfortable' : 'compact'"
-      :placeholder="isMobile ? files.searchFiles : files.searchRecentAndStorageFiles"
+      :placeholder="isMobile || OPEN_ONLY ? files.searchFiles : files.searchRecentAndStorageFiles"
       :aria-label="files.searchFiles"
     >
       <template #leading><icon-lucide-search class="size-4" /></template>
     </AppInput>
     <div class="grid grid-cols-2 gap-2 md:contents">
-      <div class="col-span-2 grid md:contents">
+      <div v-if="!OPEN_ONLY" class="col-span-2 grid md:contents">
         <HomeJoinRoom :size="isTouch ? 'lg' : 'md'" />
       </div>
       <AppButton
@@ -86,7 +88,7 @@ watch(
         {{ menu.open }}
       </AppButton>
       <Tip
-        v-for="choice in CREATE_CHOICES"
+        v-for="choice in OPEN_ONLY ? [] : CREATE_CHOICES"
         :key="choice.kind"
         :label="destination ? files.createIn({ place: destination }) : ''"
         :disabled="!destination"

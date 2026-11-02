@@ -6,6 +6,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 # Homebrew's rustup is keg-only, so its cargo is not on PATH by default.
 export PATH="/opt/homebrew/opt/rustup/bin:$PATH"
+# MyPen has no use for OpenPencil Cloud, so build without it.
+export VITE_OPENPENCIL_CLOUD=off
 
 APP=desktop/target/release/bundle/macos/MyPen.app
 DEST=/Applications/MyPen.app
