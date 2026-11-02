@@ -4,7 +4,11 @@ import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 
 import { useEditorStore } from '@/app/editor/active-store'
 import { findAssetPage } from '@/components/assets-panel/page'
-import { ASSET_GRID_THUMBNAIL_SIZE, ASSET_THUMBNAIL_RENDER_SCALE } from '@/constants'
+import {
+  ASSET_GRID_THUMBNAIL_SIZE,
+  ASSET_ICON_THUMBNAIL_SIZE,
+  ASSET_THUMBNAIL_RENDER_SCALE
+} from '@/constants'
 
 const { nodeId, alt, size } = defineProps<{
   nodeId: string
@@ -13,7 +17,11 @@ const { nodeId, alt, size } = defineProps<{
 }>()
 
 const editor = useEditorStore()
-const isGridThumbnail = computed(() => size === ASSET_GRID_THUMBNAIL_SIZE)
+const THUMBNAIL_CLASSES: Record<number, string> = {
+  [ASSET_GRID_THUMBNAIL_SIZE]: 'size-24',
+  [ASSET_ICON_THUMBNAIL_SIZE]: 'size-8'
+}
+const sizeClass = computed(() => THUMBNAIL_CLASSES[size] ?? 'size-10')
 const thumbnail = useTemplateRef<HTMLElement>('thumbnail')
 const isVisible = useElementVisibility(thumbnail)
 const previewBlob = shallowRef<Blob | null>(null)
@@ -59,7 +67,7 @@ watch(
     data-slot="asset-thumbnail"
     :class="[
       'flex shrink-0 items-center justify-center overflow-hidden rounded bg-canvas/60',
-      isGridThumbnail ? 'size-24' : 'size-10'
+      sizeClass
     ]"
   >
     <img

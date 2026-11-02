@@ -11,6 +11,7 @@ import SegmentedControl from '@/components/ui/select/SegmentedControl.vue'
 import splitterTheme from '@/theme/splitter'
 
 import AssetsPanel from './assets-panel/AssetsPanel.vue'
+import AssetsPanelMedia from './assets-panel/AssetsPanelMedia.vue'
 import LayerTree from './LayerTree/LayerTree.vue'
 import PagesPanel from './PagesPanel.vue'
 
@@ -55,7 +56,8 @@ const splitterStyles = tv(splitterTheme)({ direction: 'vertical' })
         </template>
       </SegmentedControl>
     </div>
-    <AssetsPanel v-if="activePanel !== 'file'" />
+    <AssetsPanel v-if="activePanel === 'components'" />
+    <AssetsPanelMedia v-else-if="activePanel === 'assets'" />
     <SplitterGroup
       v-else
       direction="vertical"

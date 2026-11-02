@@ -6,7 +6,7 @@ import { CanvasHelper } from '#tests/helpers/canvas'
 
 /** Builds a three-page file in the editor and returns its saved bytes. */
 async function saveThreePageFile(page: Page) {
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
     const store = window.openPencil?.getStore?.()
     if (!store) throw new Error('OpenPencil store not initialized')
     const first = store.graph.getNode(store.state.currentPageId)
@@ -22,6 +22,34 @@ async function saveThreePageFile(page: Page) {
       name: 'lucide/x/16x16',
       width: 16,
       height: 16
+    })
+    const canvas = document.createElement('canvas')
+    canvas.width = 4
+    canvas.height = 4
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('2D context unavailable')
+    context.fillStyle = '#e11d48'
+    context.fillRect(0, 0, 4, 4)
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, 'image/png')
+    })
+    if (!blob) throw new Error('Could not encode the test image')
+    const hash = '0123456789abcdef0123456789abcdef01234567'
+    store.graph.images.set(hash, new Uint8Array(await blob.arrayBuffer()))
+    store.graph.createNode('RECTANGLE', icons.id, {
+      name: 'Hero photo',
+      width: 40,
+      height: 40,
+      fills: [
+        {
+          type: 'IMAGE',
+          imageHash: hash,
+          imageScaleMode: 'FILL',
+          color: { r: 0, g: 0, b: 0, a: 1 },
+          visible: true,
+          opacity: 1
+        }
+      ]
     })
     const more = store.graph.createNode('CANVAS', store.graph.rootId, { name: 'More' })
     store.graph.createNode('COMPONENT', more.id, {
@@ -116,5 +144,46 @@ test('components tab lists a file reopened while it is open', async ({ page }) =
   await expect(panel.getByRole('region', { name: 'Card' })).toBeVisible()
   await expect(panel.getByTestId('assets-loading-pages')).toBeHidden()
   await expect(panel.getByTestId('asset-item')).toHaveCount(2)
+  canvas.assertNoErrors()
+})
+
+test('assets tab shows icons and images and goes to an image', async ({ page }) => {
+  const canvas = new CanvasHelper(page)
+  await page.goto('/?test')
+  await canvas.waitForInit()
+  const bytes = await saveThreePageFile(page)
+  await openSaved(page, bytes)
+
+  await page.getByTestId('left-panel-assets-tab').click()
+  const panel = page.getByTestId('assets-media-panel')
+  await expect(panel).toBeVisible()
+  await expect(panel.getByTestId('assets-loading-pages')).toBeHidden()
+
+  // Icons and images sit on a page that was not open, so they appear once it has loaded.
+  const icons = panel.getByTestId('icon-item')
+  await expect(icons).toHaveCount(1)
+  await expect(icons.first()).toHaveAttribute('aria-label', 'x · 16x16')
+  await expect(panel.getByRole('region', { name: 'lucide' })).toBeVisible()
+  const images = panel.getByTestId('image-item')
+  await expect(images).toHaveCount(1)
+  // Components belong to the Components tab.
+  await expect(panel.getByTestId('asset-item')).toHaveCount(0)
+
+  const startPage = await page.evaluate(() => window.openPencil?.getStore?.().state.currentPageId)
+  await images.first().click()
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const store = window.openPencil?.getStore?.()
+        const id = [...(store?.state.selectedIds ?? [])][0]
+        const node = id ? store?.graph.getNode(id) : undefined
+        const pageName = store?.graph.getNode(store.state.currentPageId)?.name
+        return { selected: node?.name ?? null, pageName: pageName ?? null }
+      })
+    )
+    .toEqual({ selected: 'Hero photo', pageName: 'Icons' })
+  expect(startPage).not.toBe(
+    await page.evaluate(() => window.openPencil?.getStore?.().state.currentPageId)
+  )
   canvas.assertNoErrors()
 })
