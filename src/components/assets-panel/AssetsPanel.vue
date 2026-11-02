@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useObjectUrl } from '@vueuse/core'
+import { useClipboard, useObjectUrl } from '@vueuse/core'
 import {
   ContextMenuContent,
   ContextMenuItem,
@@ -17,10 +17,11 @@ import { createDefaultNode } from '@open-pencil/scene-graph/node-defaults'
 import { useI18n } from '@open-pencil/vue/i18n'
 
 import { useEditorStore } from '@/app/editor/active-store'
+import { libraryItems } from '@/app/editor/library/items'
 import { useLibraryService } from '@/app/libraries'
-import { openExternalLink } from '@/app/shell/ui'
+import { openExternalLink, toast } from '@/app/shell/ui'
 import AssetThumbnail from '@/components/assets-panel/AssetThumbnail.vue'
-import { findAssetPage } from '@/components/assets-panel/page'
+import { useAllPagesLoaded } from '@/components/assets-panel/useAllPagesLoaded'
 import { nodeIcon } from '@/components/icons'
 import LibraryManagerDialog from '@/components/libraries/LibraryManagerDialog.vue'
 import { useLibraryEntry } from '@/components/libraries/useLibraryEntry'
@@ -40,6 +41,7 @@ type AssetView = 'grid' | 'list'
 type LocalAsset = {
   id: string
   name: string
+  label: string
   node: SceneNode
   componentId: string | null
   variants: Array<{ name: string; values: string[] }>
@@ -54,11 +56,11 @@ type LocalAsset = {
   libraryName: string | null
   pageId: string
   pageName: string
+  group: string
 }
 
 type AssetGroup = {
-  pageId: string
-  pageName: string
+  name: string
   assets: LocalAsset[]
 }
 
@@ -66,6 +68,8 @@ const editor = useEditorStore()
 const libraryService = useLibraryService()
 const remoteAssets = libraryService.enabledAssets
 const { panels, commands } = useI18n()
+const { loading: loadingPages, pending: pendingPages } = useAllPagesLoaded()
+const { copy } = useClipboard({ legacy: true })
 const query = ref('')
 const assetView = ref<AssetView>('grid')
 const detailsOpen = ref(false)
@@ -103,64 +107,46 @@ function componentSetVariantInfo(componentSetId: string) {
   }))
 }
 
-const graphNodes = computed(() => ({
-  sceneVersion: editor.state.sceneVersion,
-  nodes: [...editor.graph.nodes.values()]
-}))
-
-const assetNodes = computed(() =>
-  graphNodes.value.nodes.filter(
-    (node) => node.type === 'COMPONENT' || node.type === 'COMPONENT_SET'
-  )
-)
-
-const pageByNodeId = computed(() => {
-  const pages = new Map<string, { id: string; name: string }>()
-  for (const node of assetNodes.value) {
-    const page = findAssetPage(node, editor.graph)
-    if (page) pages.set(node.id, { id: page.id, name: page.name })
-  }
-  return pages
+const localItems = computed(() => {
+  // Reading the version recomputes the list as background page loads add components.
+  void editor.state.sceneVersion
+  return libraryItems(editor.graph).filter((item) => item.kind === 'component')
 })
 
 const assets = computed<LocalAsset[]>(() => {
-  const local = assetNodes.value
-    .filter((node) => !node.librarySource?.readOnly)
-    .filter((node) => {
-      if (node.type === 'COMPONENT_SET') return true
-      const parent = node.parentId ? editor.graph.getNode(node.parentId) : null
-      return parent?.type !== 'COMPONENT_SET'
-    })
-    .map((node) => {
-      const defaultVariant =
-        node.type === 'COMPONENT_SET' ? editor.getDefaultVariantForComponentSet(node.id) : node
-      const conflicts =
-        node.type === 'COMPONENT_SET' ? editor.getComponentSetVariantConflicts(node.id) : []
-      const variants = node.type === 'COMPONENT_SET' ? componentSetVariantInfo(node.id) : []
-      const page = pageByNodeId.value.get(node.id)
-      return {
-        id: node.id,
-        name: node.name,
-        node,
-        componentId: defaultVariant?.id ?? null,
-        variants,
-        variantCount: node.type === 'COMPONENT_SET' ? node.childIds.length : 0,
-        hasConflicts: conflicts.length > 0,
-        sourceLibraryKey: node.sourceLibraryKey,
-        description: node.symbolDescription,
-        docsURL: node.symbolLinks[0]?.uri ?? null,
-        libraryId: null,
-        revisionId: null,
-        assetKey: null,
-        libraryName: null,
-        pageId: page?.id ?? editor.state.currentPageId,
-        pageName: page?.name ?? panels.value.page
-      }
-    })
-    .sort((a, b) => a.name.localeCompare(b.name))
+  const local = localItems.value.flatMap((item) => {
+    const node = editor.graph.getNode(item.id)
+    if (!node || node.librarySource?.readOnly) return []
+    const defaultVariant =
+      node.type === 'COMPONENT_SET' ? editor.getDefaultVariantForComponentSet(node.id) : node
+    const conflicts =
+      node.type === 'COMPONENT_SET' ? editor.getComponentSetVariantConflicts(node.id) : []
+    const variants = node.type === 'COMPONENT_SET' ? componentSetVariantInfo(node.id) : []
+    return {
+      id: node.id,
+      name: item.name,
+      label: item.label,
+      node,
+      componentId: defaultVariant?.id ?? null,
+      variants,
+      variantCount: node.type === 'COMPONENT_SET' ? node.childIds.length : 0,
+      hasConflicts: conflicts.length > 0,
+      sourceLibraryKey: node.sourceLibraryKey,
+      description: node.symbolDescription,
+      docsURL: node.symbolLinks[0]?.uri ?? null,
+      libraryId: null,
+      revisionId: null,
+      assetKey: null,
+      libraryName: null,
+      pageId: item.pageId,
+      pageName: item.pageName,
+      group: item.group
+    }
+  })
   const remote = remoteAssets.value.map(({ libraryId, libraryName, revisionId, asset }) => ({
     id: `${libraryId}:${asset.key}`,
     name: asset.name,
+    label: asset.name,
     node: createDefaultNode(() => asset.sourceNodeId, asset.type, {
       name: asset.name,
       symbolDescription: asset.description,
@@ -178,7 +164,8 @@ const assets = computed<LocalAsset[]>(() => {
     assetKey: asset.key,
     libraryName,
     pageId: `library:${libraryId}`,
-    pageName: libraryName
+    pageName: libraryName,
+    group: libraryName
   }))
   return [...local, ...remote]
 })
@@ -192,15 +179,11 @@ const filteredAssets = computed(() => {
 const assetGroups = computed<AssetGroup[]>(() => {
   const groups = new Map<string, AssetGroup>()
   for (const asset of filteredAssets.value) {
-    const group = groups.get(asset.pageId) ?? {
-      pageId: asset.pageId,
-      pageName: asset.pageName,
-      assets: []
-    }
+    const group = groups.get(asset.group) ?? { name: asset.group, assets: [] }
     group.assets.push(asset)
-    groups.set(asset.pageId, group)
+    groups.set(asset.group, group)
   }
-  return [...groups.values()].sort((a, b) => a.pageName.localeCompare(b.pageName))
+  return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name))
 })
 
 const selectedAsset = computed(
@@ -323,6 +306,17 @@ function focusAsset(asset: LocalAsset) {
   void editor.focusComponent(asset.id)
 }
 
+/** A local component is gone to; a library asset is not in this file yet, so it opens its details. */
+function onAssetClick(asset: LocalAsset) {
+  if (asset.libraryId) void openDetails(asset)
+  else focusAsset(asset)
+}
+
+async function copyName(asset: LocalAsset) {
+  await copy(asset.name)
+  toast.info(panels.value.nameCopied)
+}
+
 function onAssetKeydown(event: KeyboardEvent, asset: LocalAsset) {
   if ((event.metaKey || event.ctrlKey) && event.code === 'Enter') {
     event.preventDefault()
@@ -381,10 +375,24 @@ async function insertSelectedAsset() {
       </SegmentedControl>
     </div>
 
+    <p
+      v-if="loadingPages"
+      data-test-id="assets-loading-pages"
+      role="status"
+      class="shrink-0 px-3 pb-1 text-[11px] text-muted"
+    >
+      {{ panels.loadingPages({ count: pendingPages }) }}
+    </p>
+
     <div class="scrollbar-thin flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-2">
-      <section v-for="group in assetGroups" :key="group.pageId" class="mb-3">
+      <section
+        v-for="group in assetGroups"
+        :key="group.name"
+        :aria-label="group.name"
+        class="mb-3"
+      >
         <h2 class="mb-1 px-1 text-[11px] font-semibold text-muted">
-          {{ group.pageName }}
+          {{ group.name }}
         </h2>
         <div :class="assetView === 'grid' ? 'grid grid-cols-2 gap-2' : 'flex flex-col gap-0.5'">
           <ContextMenuRoot v-for="asset in group.assets" :key="asset.id">
@@ -397,12 +405,13 @@ async function insertSelectedAsset() {
                 :draggable="!!asset.componentId"
                 :aria-busy="insertingAssetId === asset.id"
                 :class="[
-                  'group/asset rounded text-left text-xs text-surface outline-none hover:bg-hover focus-visible:ring-1 focus-visible:ring-panel-focus',
+                  'group/asset relative rounded text-left text-xs text-surface outline-none hover:bg-hover focus-visible:ring-1 focus-visible:ring-panel-focus',
                   assetView === 'grid'
                     ? 'flex min-w-0 flex-col items-center gap-1 p-1.5'
                     : 'flex w-full items-center gap-2 px-1.5 py-1'
                 ]"
-                @click="void openDetails(asset)"
+                @click="onAssetClick(asset)"
+                @dblclick="void openDetails(asset)"
                 @keydown="onAssetKeydown($event, asset)"
                 @dragstart="onDragStart($event, asset)"
               >
@@ -422,7 +431,9 @@ async function insertSelectedAsset() {
                 />
                 <span :class="assetView === 'grid' ? 'w-full min-w-0' : 'min-w-0 flex-1'">
                   <span class="flex min-w-0 items-center gap-1">
-                    <span data-test-id="asset-name" class="truncate">{{ asset.name }}</span>
+                    <Tip :label="asset.name">
+                      <span data-test-id="asset-name" class="truncate">{{ asset.label }}</span>
+                    </Tip>
                     <span
                       v-if="asset.sourceLibraryKey"
                       data-test-id="asset-library-badge"
@@ -458,6 +469,21 @@ async function insertSelectedAsset() {
                     {{ panels.duplicateVariantValues }}
                   </span>
                 </span>
+                <Tip :label="panels.copyName">
+                  <AppButton
+                    v-bind="insertButton"
+                    data-test-id="asset-copy-name"
+                    :aria-label="panels.copyName"
+                    :class="[
+                      'shrink-0 opacity-0 group-focus-within/asset:opacity-100 group-hover/asset:opacity-100',
+                      assetView === 'grid' ? 'absolute top-1 right-1' : ''
+                    ]"
+                    @pointerdown.stop
+                    @click.stop="copyName(asset)"
+                  >
+                    <icon-lucide-copy class="size-3" />
+                  </AppButton>
+                </Tip>
                 <div v-if="assetView === 'list'" class="flex shrink-0 items-center">
                   <Tip v-if="asset.docsURL" :label="panels.openDocumentation">
                     <AppButton
@@ -493,6 +519,13 @@ async function insertSelectedAsset() {
                     @select="focusAsset(asset)"
                   >
                     {{ panels.goToMainComponent }}
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    data-test-id="asset-context-copy-name"
+                    :class="contextMenu.item"
+                    @select="void copyName(asset)"
+                  >
+                    {{ panels.copyName }}
                   </ContextMenuItem>
                   <ContextMenuItem
                     data-test-id="asset-context-view-details"

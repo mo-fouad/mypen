@@ -6,7 +6,7 @@ import { CanvasHelper } from '#tests/helpers/canvas'
 const publicationSchema = v.pipe(v.string(), v.parseJson(), v.object({ revisionId: v.string() }))
 
 async function openAssets(page: Page) {
-  await page.getByTestId('left-panel-assets-tab').click()
+  await page.getByTestId('left-panel-components-tab').click()
 }
 
 async function openLibraries(page: Page) {

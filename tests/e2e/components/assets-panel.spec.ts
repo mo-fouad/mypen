@@ -111,7 +111,7 @@ test('assets panel groups component sets and inserts the default variant', async
   })
   await canvas.waitForRender()
 
-  await page.getByTestId('left-panel-assets-tab').click()
+  await page.getByTestId('left-panel-components-tab').click()
   await page.getByRole('button', { name: 'List view' }).click()
 
   const assetsPanel = page.getByTestId('assets-panel')
@@ -132,7 +132,8 @@ test('assets panel groups component sets and inserts the default variant', async
     'Duplicate variant values'
   )
 
-  await buttonAsset.click()
+  // A click goes to the component; double-click opens its details.
+  await buttonAsset.dblclick()
   const details = page.getByTestId('asset-details-dialog')
   await expect(details).toBeVisible()
   await expect(details).toContainText('Button')
@@ -218,7 +219,7 @@ test('assets panel supports Figma-style views, component actions, and canvas dra
   })
   await canvas.waitForRender()
 
-  await page.getByTestId('left-panel-assets-tab').click()
+  await page.getByTestId('left-panel-components-tab').click()
   const asset = page.locator(`[data-asset-id="${setup.componentId}"]`)
   await expect(page.getByRole('heading', { name: 'Components' })).toBeVisible()
   await expect(asset.locator('[data-slot="asset-thumbnail"]')).toHaveClass(/size-24/)
@@ -241,7 +242,7 @@ test('assets panel supports Figma-style views, component actions, and canvas dra
     )
     .toEqual({ pageId: setup.secondPageId, selectedId: setup.componentId })
 
-  await page.getByTestId('left-panel-assets-tab').click()
+  await page.getByTestId('left-panel-components-tab').click()
   const canvasBox = expectDefined(await canvas.canvas.boundingBox(), 'canvas bounds')
   await page
     .locator(`[data-asset-id="${setup.componentId}"]`)
@@ -287,7 +288,7 @@ test('assets insertion accounts for entered container coordinates', async ({ pag
   })
   await canvas.waitForRender()
 
-  await page.getByTestId('left-panel-assets-tab').click()
+  await page.getByTestId('left-panel-components-tab').click()
   await page.getByRole('button', { name: 'List view' }).click()
   await page.locator(`[data-asset-id="${setup.componentId}"]`).getByTestId('asset-insert').click()
   await canvas.waitForRender()
@@ -322,7 +323,7 @@ test('demo exposes component set assets', async ({ page }) => {
   await page.goto('/demo')
   await canvas.waitForInit()
 
-  await page.getByTestId('left-panel-assets-tab').click()
+  await page.getByTestId('left-panel-components-tab').click()
   await page.getByRole('button', { name: 'List view' }).click()
   const assetsPanel = page.getByTestId('assets-panel')
 

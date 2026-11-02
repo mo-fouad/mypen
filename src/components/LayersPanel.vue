@@ -14,16 +14,17 @@ import AssetsPanel from './assets-panel/AssetsPanel.vue'
 import LayerTree from './LayerTree/LayerTree.vue'
 import PagesPanel from './PagesPanel.vue'
 
-const { menu, panels } = useI18n()
-const activePanel = ref<'file' | 'assets'>('file')
+const { panels } = useI18n()
+const activePanel = ref<'file' | 'components' | 'assets'>('file')
 const panelModel = computed({
   get: () => activePanel.value,
   set: (value: string) => {
-    if (value === 'file' || value === 'assets') activePanel.value = value
+    if (value === 'file' || value === 'components' || value === 'assets') activePanel.value = value
   }
 })
 const panelOptions = computed(() => [
-  { value: 'file', label: menu.value.file },
+  { value: 'file', label: panels.value.layers },
+  { value: 'components', label: panels.value.components },
   { value: 'assets', label: panels.value.assets }
 ])
 const panelTabsUI = { root: 'w-full' }
@@ -46,7 +47,7 @@ const splitterStyles = tv(splitterTheme)({ direction: 'vertical' })
       >
         <template #option="{ option }">
           <span
-            v-test-id="option.value === 'file' ? 'left-panel-layers-tab' : 'left-panel-assets-tab'"
+            v-test-id="`left-panel-${option.value === 'file' ? 'layers' : option.value}-tab`"
             class="truncate"
           >
             {{ option.label }}
@@ -54,7 +55,7 @@ const splitterStyles = tv(splitterTheme)({ direction: 'vertical' })
         </template>
       </SegmentedControl>
     </div>
-    <AssetsPanel v-if="activePanel === 'assets'" />
+    <AssetsPanel v-if="activePanel !== 'file'" />
     <SplitterGroup
       v-else
       direction="vertical"
