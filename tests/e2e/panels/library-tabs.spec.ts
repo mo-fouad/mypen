@@ -217,3 +217,68 @@ test('assets tab shows an image no layer uses as disabled', async ({ page }) => 
   await expect(image.getByTestId('image-copy-name')).toHaveCount(0)
   canvas.assertNoErrors()
 })
+
+test('tokens tab shows colors per mode and applies one', async ({ page }) => {
+  const canvas = new CanvasHelper(page)
+  await page.goto('/?test')
+  await canvas.waitForInit()
+  const ids = await page.evaluate(() => {
+    const store = window.openPencil?.getStore?.()
+    if (!store) throw new Error('OpenPencil store not initialized')
+    const collection = store.graph.createCollection('Brand')
+    const light = collection.defaultModeId
+    const dark = store.graph.createMode(collection.id, 'Dark')
+    if (!dark) throw new Error('Mode not created')
+    const primary = store.graph.createVariable('primary', 'COLOR', collection.id, {
+      r: 1,
+      g: 0,
+      b: 0,
+      a: 1
+    })
+    primary.valuesByMode[dark] = { r: 0, g: 0, b: 1, a: 1 }
+    const rect = store.graph.createNode('RECTANGLE', store.state.currentPageId, {
+      name: 'Box',
+      width: 50,
+      height: 50,
+      fills: [{ type: 'SOLID', color: { r: 0, g: 1, b: 0, a: 1 }, visible: true, opacity: 1 }]
+    })
+    store.requestRender()
+    return { light, dark, rect: rect.id, primary: primary.id }
+  })
+  const undoDepth = () =>
+    page.evaluate(() => {
+      const undo = window.openPencil?.getStore?.().undo
+      let depth = 0
+      while (undo?.peekUndo(depth)) depth++
+      return depth
+    })
+
+  await page.getByTestId('properties-tab-tokens').click()
+  const panel = page.getByTestId('tokens-panel')
+  const row = panel.locator(`[data-token-id="${ids.primary}"]`)
+  await expect(row).toHaveCount(1)
+  await expect(row).toContainText('primary')
+  const swatch = row.getByTestId('token-swatch')
+  const before = await swatch.evaluate((el) => getComputedStyle(el).backgroundColor)
+
+  const depth = await undoDepth()
+  await panel.getByTestId(`token-mode-${ids.dark}`).click()
+  await expect
+    .poll(() => swatch.evaluate((el) => getComputedStyle(el).backgroundColor))
+    .not.toBe(before)
+  expect(await undoDepth()).toBe(depth)
+
+  await page.evaluate((id) => window.openPencil?.getStore?.().select([id]), ids.rect)
+  await row.hover()
+  await row.getByTestId('token-apply-fill').click()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        (id) => window.openPencil?.getStore?.().graph.getNode(id)?.boundVariables['fills/0/color'],
+        ids.rect
+      )
+    )
+    .toBe(ids.primary)
+  expect(await undoDepth()).toBe(depth + 1)
+  canvas.assertNoErrors()
+})

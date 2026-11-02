@@ -1,4 +1,8 @@
 {
+  "tokens": "Jetons",
+  "noTokens": "Ce fichier n’a pas encore de tokens. Demandez à votre assistant IA d’en créer.",
+  "applyToFill": "Appliquer au remplissage",
+  "editInVariables": "Modifier dans Variables",
   "layers": "Calques",
   "pages": "Pages",
   "design": "Design",

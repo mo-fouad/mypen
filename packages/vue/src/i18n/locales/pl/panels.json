@@ -1,4 +1,8 @@
 {
+  "tokens": "Tokeny",
+  "noTokens": "Ten plik nie ma jeszcze tokenów. Poproś asystenta AI o ich utworzenie.",
+  "applyToFill": "Zastosuj do wypełnienia",
+  "editInVariables": "Edytuj w zmiennych",
   "layers": "Warstwy",
   "pages": "Strony",
   "design": "Design",

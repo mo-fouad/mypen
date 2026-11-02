@@ -1,4 +1,8 @@
 {
+  "tokens": "Token",
+  "noTokens": "Questo file non ha ancora token. Chiedi al tuo assistente IA di crearne alcuni.",
+  "applyToFill": "Applica al riempimento",
+  "editInVariables": "Modifica in Variabili",
   "layers": "Livelli",
   "pages": "Pagine",
   "design": "Design",

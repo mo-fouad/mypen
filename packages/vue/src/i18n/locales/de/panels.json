@@ -1,4 +1,8 @@
 {
+  "tokens": "Design-Tokens",
+  "noTokens": "Diese Datei hat noch keine Tokens. Bitte deinen KI-Assistenten, welche zu erstellen.",
+  "applyToFill": "Auf Füllung anwenden",
+  "editInVariables": "In Variablen bearbeiten",
   "layers": "Ebenen",
   "pages": "Seiten",
   "design": "Design",

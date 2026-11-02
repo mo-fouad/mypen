@@ -1,4 +1,8 @@
 {
+  "tokens": "トークン",
+  "noTokens": "このファイルにはまだトークンがありません。クロードに作成を依頼してください。",
+  "applyToFill": "塗りに適用",
+  "editInVariables": "変数で編集",
   "untitled": "無題",
   "layers": "レイヤー",
   "pages": "ページ",

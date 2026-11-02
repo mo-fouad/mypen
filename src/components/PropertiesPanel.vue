@@ -11,6 +11,7 @@ import { useEditorStore } from '@/app/editor/active-store'
 import { countIssues } from '@/app/editor/design-check/issues'
 import ChatPanel from '@/components/chat/ChatPanel.vue'
 import { CloudVersionHistory } from '@/components/cloud/integration'
+import TokensPanel from '@/components/tokens-panel/TokensPanel.vue'
 import propertiesTabsTheme from '@/theme/panel/properties-tabs'
 
 import CodePanel from './CodePanel.vue'
@@ -62,6 +63,15 @@ const problemCount = computed(() => {
         >
           {{ panels.design }}
         </TabsTrigger>
+        <TabsTrigger
+          value="tokens"
+          data-test-id="properties-tab-tokens"
+          :aria-label="panels.tokens"
+          :class="tabStyles.trigger()"
+        >
+          <icon-lucide-swatch-book :class="tabStyles.icon()" aria-hidden="true" />
+          <span :class="tabStyles.label()">{{ panels.tokens }}</span>
+        </TabsTrigger>
         <TabsTrigger value="code" data-test-id="properties-tab-code" :class="tabStyles.trigger()">
           <icon-lucide-code :class="tabStyles.icon()" aria-hidden="true" />
           <span :class="tabStyles.label()">{{ panels.code }}</span>
@@ -98,6 +108,10 @@ const problemCount = computed(() => {
         :hidden="activeTab !== 'design'"
       >
         <DesignPanel />
+      </TabsContent>
+
+      <TabsContent value="tokens" class="flex min-h-0 flex-1 flex-col">
+        <TokensPanel />
       </TabsContent>
 
       <TabsContent

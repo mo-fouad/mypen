@@ -1,4 +1,8 @@
 {
+  "tokens": "Tokens de diseño",
+  "noTokens": "Este archivo aún no tiene tokens. Pídele a tu asistente de IA que cree algunos.",
+  "applyToFill": "Aplicar al relleno",
+  "editInVariables": "Editar en Variables",
   "untitled": "Sin título",
   "layers": "Capas",
   "pages": "Páginas",
