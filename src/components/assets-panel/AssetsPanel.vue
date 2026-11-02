@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useClipboard, useObjectUrl } from '@vueuse/core'
+import { useObjectUrl } from '@vueuse/core'
 import {
   ContextMenuContent,
   ContextMenuItem,
@@ -19,9 +19,11 @@ import { useI18n } from '@open-pencil/vue/i18n'
 import { useEditorStore } from '@/app/editor/active-store'
 import { libraryItems } from '@/app/editor/library/items'
 import { useLibraryService } from '@/app/libraries'
-import { openExternalLink, toast } from '@/app/shell/ui'
+import { openExternalLink } from '@/app/shell/ui'
 import AssetThumbnail from '@/components/assets-panel/AssetThumbnail.vue'
 import { useAllPagesLoaded } from '@/components/assets-panel/useAllPagesLoaded'
+import { useCopyName } from '@/components/assets-panel/useCopyName'
+import { useLibraryVersion } from '@/components/assets-panel/useLibraryVersion'
 import { nodeIcon } from '@/components/icons'
 import LibraryManagerDialog from '@/components/libraries/LibraryManagerDialog.vue'
 import { useLibraryEntry } from '@/components/libraries/useLibraryEntry'
@@ -70,7 +72,8 @@ const libraryService = useLibraryService()
 const remoteAssets = libraryService.enabledAssets
 const { panels, commands } = useI18n()
 const { loading: loadingPages, pending: pendingPages } = useAllPagesLoaded()
-const { copy, copied } = useClipboard({ legacy: true })
+const copyName = useCopyName()
+const libraryVersion = useLibraryVersion()
 const query = ref('')
 const assetView = ref<AssetView>('grid')
 const detailsOpen = ref(false)
@@ -110,7 +113,7 @@ function componentSetVariantInfo(componentSetId: string) {
 
 const localItems = computed(() => {
   // Reading the version recomputes the list as background page loads add components.
-  void editor.state.sceneVersion
+  void libraryVersion.value
   return libraryItems(editor.graph).filter((item) => item.kind === 'component')
 })
 
@@ -309,15 +312,11 @@ function focusAsset(asset: LocalAsset) {
 }
 
 /** A local component is gone to; a library asset is not in this file yet, so it opens its details. */
-function onAssetClick(asset: LocalAsset) {
+function onAssetClick(event: MouseEvent, asset: LocalAsset) {
+  // A double-click's second click leaves the open to the dblclick handler.
+  if (event.detail > 1) return
   if (asset.libraryId) void openDetails(asset)
   else focusAsset(asset)
-}
-
-async function copyName(asset: LocalAsset) {
-  await copy(asset.name)
-  if (copied.value) toast.info(panels.value.nameCopied)
-  else toast.error(panels.value.copyNameFailed)
 }
 
 function onAssetKeydown(event: KeyboardEvent, asset: LocalAsset) {
@@ -410,7 +409,7 @@ async function insertSelectedAsset() {
                     ? 'flex min-w-0 flex-col items-center gap-1 p-1.5'
                     : 'flex w-full items-center gap-2 px-1.5 py-1'
                 ]"
-                @click="onAssetClick(asset)"
+                @click="onAssetClick($event, asset)"
                 @dblclick="void openDetails(asset)"
                 @keydown="onAssetKeydown($event, asset)"
                 @dragstart="onDragStart($event, asset)"
@@ -479,7 +478,7 @@ async function insertSelectedAsset() {
                       assetView === 'grid' ? 'absolute top-1 right-1' : ''
                     ]"
                     @pointerdown.stop
-                    @click.stop="copyName(asset)"
+                    @click.stop="copyName(asset.name)"
                   >
                     <icon-lucide-copy class="size-3" />
                   </AppButton>
@@ -523,7 +522,7 @@ async function insertSelectedAsset() {
                   <ContextMenuItem
                     data-test-id="asset-context-copy-name"
                     :class="contextMenu.item"
-                    @select="void copyName(asset)"
+                    @select="void copyName(asset.name)"
                   >
                     {{ panels.copyName }}
                   </ContextMenuItem>

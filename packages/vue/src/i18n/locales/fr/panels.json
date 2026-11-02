@@ -17,7 +17,7 @@
   "copyName": "Copier le nom",
   "nameCopied": "Nom copié",
   "copyNameFailed": "Impossible de copier le nom",
-  "loadingPages": "Chargement des pages… {count} restantes",
+  "loadingPages": "Chargement des pages… ({count})",
   "page": "Page",
   "selectionColors": "Couleurs de la sélection",
   "frame": "Cadre",

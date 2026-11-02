@@ -141,6 +141,8 @@ export {
 export const ASSET_GRID_THUMBNAIL_SIZE = 96
 export const ASSET_LIST_THUMBNAIL_SIZE = 40
 export const ASSET_ICON_THUMBNAIL_SIZE = 32
+/** Minimum gap between rebuilds of the Components and Assets lists while the document changes. */
+export const LIBRARY_REFRESH_MS = 300
 export const ASSET_THUMBNAIL_RENDER_SCALE = 2
 
 export const HANDLE_SIZE = 6

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useClipboard } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import { fontManager } from '@open-pencil/core/text'
@@ -9,7 +8,7 @@ import { vTestId } from '@open-pencil/vue/testing'
 import { useEditorStore } from '@/app/editor/active-store'
 import { openVariablesDialog } from '@/app/editor/tokens/dialog'
 import { tokenSections, type TokenPanelRow } from '@/app/editor/tokens/panel'
-import { toast } from '@/app/shell/ui'
+import { useCopyName } from '@/components/assets-panel/useCopyName'
 import AppButton from '@/components/ui/button/AppButton.vue'
 import AppPlaceholder from '@/components/ui/feedback/AppPlaceholder.vue'
 import Tip from '@/components/ui/overlay/Tip.vue'
@@ -19,7 +18,7 @@ import { VARIABLE_TYPE_ICONS } from '@/components/variables/type-icons'
 
 const editor = useEditorStore()
 const { panels } = useI18n()
-const { copy, copied } = useClipboard({ legacy: true })
+const copyName = useCopyName()
 
 /** The mode shown per collection; view-only, so it never reaches the document or its history. */
 const shownModes = ref<Record<string, string>>({})
@@ -40,12 +39,6 @@ const rowButton = {
   color: 'neutral' as const,
   variant: 'ghost' as const,
   size: 'sm' as const
-}
-
-async function copyName(name: string) {
-  await copy(name)
-  if (copied.value) toast.info(panels.value.nameCopied)
-  else toast.error(panels.value.copyNameFailed)
 }
 
 function applyToFill(variableId: string) {

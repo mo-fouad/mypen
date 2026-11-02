@@ -89,3 +89,26 @@ describe('libraryItems', () => {
     ])
   })
 })
+
+describe('libraryItems order', () => {
+  test('sorts naturally and ignoring case', () => {
+    const graph = new SceneGraph()
+    const page = graph.addPage('Components')
+    for (const name of ['Icon10', 'icon2', 'Icon1']) {
+      graph.createNode('COMPONENT', page.id, { name })
+    }
+    for (const name of ['lucide/a/16x16', 'lucide/a/8x8']) {
+      graph.createNode('COMPONENT', page.id, { name })
+    }
+    const names = libraryItems(graph).map((item) => item.name)
+    expect(names.filter((n) => n.startsWith('Icon') || n.startsWith('icon'))).toEqual([
+      'Icon1',
+      'icon2',
+      'Icon10'
+    ])
+    expect(names.filter((n) => n.startsWith('lucide'))).toEqual([
+      'lucide/a/8x8',
+      'lucide/a/16x16'
+    ])
+  })
+})

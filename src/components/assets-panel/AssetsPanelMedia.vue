@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useClipboard } from '@vueuse/core'
 import { groupBy } from 'es-toolkit'
 import {
   ContextMenuContent,
@@ -16,10 +15,11 @@ import { useEditorStore } from '@/app/editor/active-store'
 import { documentImages } from '@/app/editor/library/images'
 import { libraryItems } from '@/app/editor/library/items'
 import { focusNodesOnTheirPage } from '@/app/editor/selection/focus'
-import { toast } from '@/app/shell/ui'
 import AssetImage from '@/components/assets-panel/AssetImage.vue'
 import AssetThumbnail from '@/components/assets-panel/AssetThumbnail.vue'
 import { useAllPagesLoaded } from '@/components/assets-panel/useAllPagesLoaded'
+import { useCopyName } from '@/components/assets-panel/useCopyName'
+import { useLibraryVersion } from '@/components/assets-panel/useLibraryVersion'
 import AppButton from '@/components/ui/button/AppButton.vue'
 import AppCollapsible from '@/components/ui/collapsible/AppCollapsible.vue'
 import AppPlaceholder from '@/components/ui/feedback/AppPlaceholder.vue'
@@ -31,7 +31,8 @@ import { ASSET_ICON_THUMBNAIL_SIZE } from '@/constants'
 const editor = useEditorStore()
 const { panels } = useI18n()
 const { loading: loadingPages, pending: pendingPages } = useAllPagesLoaded()
-const { copy, copied } = useClipboard({ legacy: true })
+const copyName = useCopyName()
+const libraryVersion = useLibraryVersion()
 const contextMenu = useMenuUI({ content: 'min-w-44' })
 const copyButton = {
   color: 'neutral' as const,
@@ -42,7 +43,7 @@ const copyButton = {
 
 const iconGroups = computed(() => {
   // Reading the version recomputes the lists as background page loads add icons and images.
-  void editor.state.sceneVersion
+  void libraryVersion.value
   const icons = libraryItems(editor.graph).filter((item) => item.kind === 'icon')
   return Object.entries(groupBy(icons, (item) => item.group))
     .map(([name, items]) => ({ name, items }))
@@ -51,19 +52,13 @@ const iconGroups = computed(() => {
 const iconCount = computed(() => iconGroups.value.reduce((n, group) => n + group.items.length, 0))
 
 const images = computed(() => {
-  void editor.state.sceneVersion
+  void libraryVersion.value
   return documentImages(editor.graph).map((image) => {
     const firstId = image.nodeIds[0]
     const name = firstId ? (editor.graph.getNode(firstId)?.name ?? null) : null
     return { ...image, name, firstId: firstId ?? null }
   })
 })
-
-async function copyName(name: string) {
-  await copy(name)
-  if (copied.value) toast.info(panels.value.nameCopied)
-  else toast.error(panels.value.copyNameFailed)
-}
 
 function goToImage(firstId: string | null) {
   if (firstId) void focusNodesOnTheirPage(editor, [firstId])

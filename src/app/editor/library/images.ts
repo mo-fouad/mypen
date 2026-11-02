@@ -20,7 +20,8 @@ export function documentImages(graph: SceneGraph): DocumentImage[] {
           nodeIds: [],
           pageId
         }
-        if (!entry.nodeIds.includes(node.id)) entry.nodeIds.push(node.id)
+        // Nodes are visited once, so a layer with the same image twice repeats as the last push.
+        if (entry.nodeIds.at(-1) !== node.id) entry.nodeIds.push(node.id)
         used.set(fill.imageHash, entry)
       }
       visit(node.id, pageId)

@@ -1,5 +1,3 @@
-import { sortBy } from 'es-toolkit'
-
 import type { SceneGraph, SceneNode } from '@open-pencil/scene-graph'
 
 export interface LibraryItem {
@@ -62,10 +60,13 @@ function pageItems(page: SceneNode, graph: SceneGraph): LibraryItem[] {
   return items
 }
 
+const naturalCompare = (a: string, b: string) =>
+  a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+
 /** Component sets and standalone components across all loaded pages, by group then name. */
 export function libraryItems(graph: SceneGraph): LibraryItem[] {
-  return sortBy(
-    graph.getPages().flatMap((page) => pageItems(page, graph)),
-    ['group', 'name']
-  )
+  return graph
+    .getPages()
+    .flatMap((page) => pageItems(page, graph))
+    .sort((a, b) => naturalCompare(a.group, b.group) || naturalCompare(a.name, b.name))
 }
