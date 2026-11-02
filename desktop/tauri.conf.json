@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "OpenPencil",
+  "productName": "MyPen",
   "version": "0.16.0",
-  "identifier": "net.dannote.open-pencil",
+  "identifier": "com.mofouad.mypen",
   "build": {
     "beforeDevCommand": "bun run generate:icons --target desktop && bun run generate:tauri-menu && bun run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "OpenPencil",
+        "title": "MyPen",
         "width": 1280,
         "height": 800,
         "dragDropEnabled": false,
@@ -26,7 +26,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "createUpdaterArtifacts": true,
+    "createUpdaterArtifacts": false,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -86,7 +86,7 @@
     },
     "macOS": {
       "minimumSystemVersion": "13.0",
-      "signingIdentity": "Developer ID Application: Danila Poyarkov (N7D7M3Q3CD)",
+      "signingIdentity": "-",
       "entitlements": "Entitlements.plist"
     }
   },
@@ -98,7 +98,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDU4QzBCRjBFNzhFNEVEMDEKUldRQjdlUjREci9BV0hLaEJPeG5tRXdsWkhQWFdEa0VxcEtNR1o1S2VJeGlKU1VDTldQTi9wYncK",
       "requireSignedVersion": true,
-      "endpoints": ["https://github.com/open-pencil/open-pencil/releases/latest/download/latest.json"],
+      "endpoints": [],
       "windows": {
         "installMode": "passive"
       }
