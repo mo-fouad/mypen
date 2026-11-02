@@ -12,7 +12,7 @@ export interface LibraryItem {
   kind: 'component' | 'icon'
 }
 
-const ICON_NAME = /^[^/]+\/[^/]+\/\d+x\d+$/
+const ICON_NAME = /^[^/]+(\/[^/]+)+\/\d+x\d+$/
 const ICON_PAGE = /^icons?$/i
 const GENERIC_PREFIX = /^components?$/i
 
@@ -25,15 +25,15 @@ export function isIconComponent(name: string, pageName: string): boolean {
 export function componentGroup(name: string, pageName: string): string {
   const segments = name.split('/')
   if (segments.length < 2) return pageName
+  if (ICON_NAME.test(name)) return segments.slice(0, -2).join('/')
   const [first = '', second = ''] = segments
-  return GENERIC_PREFIX.test(first) ? second : first
+  return (GENERIC_PREFIX.test(first) ? second : first) || pageName
 }
 
 function itemLabel(name: string, kind: LibraryItem['kind']): string {
   const segments = name.split('/')
   if (kind === 'icon') {
-    const [, icon, size] = segments
-    return segments.length === 3 && icon && size ? `${icon} · ${size}` : name
+    return ICON_NAME.test(name) ? `${segments.at(-2)} · ${segments.at(-1)}` : name
   }
   if (segments.length < 2) return name
   const rest = GENERIC_PREFIX.test(segments[0] ?? '') ? segments.slice(1) : segments

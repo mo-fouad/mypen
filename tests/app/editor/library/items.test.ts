@@ -9,6 +9,7 @@ describe('isIconComponent', () => {
     ['lucide/search/18x18', 'Components', true],
     ['Material Symbols Rounded/home/24x24', 'Library', true],
     ['anything', 'Icons', true],
+    ['Material Symbols/Rounded/home/24x24', 'Components', true],
     ['Component/CourseCardSmall/Dark', 'Components', false],
     ['Button', 'Design System', false]
   ])('%s on %s → %s', (name, page, expected) => expect(isIconComponent(name, page)).toBe(expected))
@@ -27,6 +28,21 @@ describe('componentGroup', () => {
     expect(componentGroup('Material Symbols Rounded/home/24x24', 'Library')).toBe(
       'Material Symbols Rounded'
     )
+  })
+})
+
+describe('four-part icon names', () => {
+  test('group by set and label by icon and size', () => {
+    expect(componentGroup('Material Symbols/Rounded/home/24x24', 'Components')).toBe(
+      'Material Symbols/Rounded'
+    )
+    const graph = new SceneGraph()
+    const page = graph.addPage('Components')
+    graph.createNode('COMPONENT', page.id, { name: 'Material Symbols/Rounded/home/24x24' })
+    expect(libraryItems(graph)[0]).toMatchObject({ kind: 'icon', label: 'home · 24x24' })
+  })
+  test('an empty segment after Component/ falls back to the page', () => {
+    expect(componentGroup('Component/', 'Components')).toBe('Components')
   })
 })
 
