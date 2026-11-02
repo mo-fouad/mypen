@@ -32,7 +32,7 @@ const sections = computed(() => {
 const fillTargets = computed(() => {
   void editor.state.sceneVersion
   return [...editor.state.selectedIds].filter(
-    (id) => (editor.graph.getNode(id)?.fills.length ?? 0) > 0
+    (id) => editor.graph.getNode(id)?.fills[0]?.type === 'SOLID'
   )
 })
 
@@ -78,7 +78,7 @@ function fontFamily(row: TokenPanelRow): string | undefined {
           <SegmentedControl
             v-if="section.modes.length > 1"
             class="mb-1"
-            :model-value="shownModes[section.collectionId] ?? section.modes[0]?.id ?? ''"
+            :model-value="section.modeId"
             :options="section.modes.map((mode) => ({ value: mode.id, label: mode.name }))"
             :label="section.name"
             @change="shownModes = { ...shownModes, [section.collectionId]: $event }"

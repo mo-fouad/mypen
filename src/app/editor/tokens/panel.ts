@@ -19,6 +19,8 @@ export interface TokenPanelRow {
 export interface TokenPanelSection {
   collectionId: string
   name: string
+  /** The mode the rows are read in. */
+  modeId: string
   modes: { id: string; name: string }[]
   rows: TokenPanelRow[]
 }
@@ -46,12 +48,14 @@ export function tokenSections(
   graph: SceneGraph,
   modeByCollection: Record<string, string>
 ): TokenPanelSection[] {
-  return [...graph.variableCollections.values()].map((collection) => {
+  return [...graph.variableCollections.values()].flatMap((collection) => {
     const modeId = modeByCollection[collection.id] ?? collection.defaultModeId
     const variables = compact(collection.variableIds.map((id) => graph.variables.get(id)))
+    if (variables.length === 0) return []
     return {
       collectionId: collection.id,
       name: collection.name,
+      modeId,
       modes: collection.modes.map((mode) => ({
         id: mode.modeId,
         name: mode.name

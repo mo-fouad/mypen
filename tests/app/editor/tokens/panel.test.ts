@@ -100,3 +100,20 @@ describe('tokenSections', () => {
     ])
   })
 })
+
+describe('tokenSections modes and empty collections', () => {
+  test('reports the mode used and skips empty collections', () => {
+    const graph = graphWith([['bg', 'COLOR', { light: parseColor('#fff'), dark: parseColor('#000') }]])
+    graph.addCollection({
+      id: 'empty',
+      name: 'Empty',
+      modes: [{ modeId: 'm', name: 'Mode 1' }],
+      defaultModeId: 'm',
+      variableIds: []
+    })
+    const sections = tokenSections(graph, {})
+    expect(sections.map((section) => section.collectionId)).toEqual(['c'])
+    expect(sections[0]?.modeId).toBe('light')
+    expect(tokenSections(graph, { c: 'dark' })[0]?.modeId).toBe('dark')
+  })
+})

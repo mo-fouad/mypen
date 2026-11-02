@@ -11,7 +11,7 @@ import { useEditorStore } from '@/app/editor/active-store'
 import { countIssues } from '@/app/editor/design-check/issues'
 import ChatPanel from '@/components/chat/ChatPanel.vue'
 import { CloudVersionHistory } from '@/components/cloud/integration'
-import TokensPanel from '@/components/tokens-panel/TokensPanel.vue'
+import PropertiesTokensPanel from '@/components/PropertiesTokensPanel.vue'
 import propertiesTabsTheme from '@/theme/panel/properties-tabs'
 
 import CodePanel from './CodePanel.vue'
@@ -111,7 +111,7 @@ const problemCount = computed(() => {
       </TabsContent>
 
       <TabsContent value="tokens" class="flex min-h-0 flex-1 flex-col">
-        <TokensPanel />
+        <PropertiesTokensPanel />
       </TabsContent>
 
       <TabsContent
