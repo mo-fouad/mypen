@@ -14,6 +14,7 @@ export const panelMessageDefaults = {
   components: 'Components',
   copyName: 'Copy name',
   nameCopied: 'Name copied',
+  copyNameFailed: 'Could not copy the name',
   loadingPages: params('Loading pages… {count} left'),
   searchLocalComponents: 'Search local components',
   assetView: 'Asset view',

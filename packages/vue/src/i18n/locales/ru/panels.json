@@ -8,6 +8,7 @@
   "components": "Компоненты",
   "copyName": "Копировать имя",
   "nameCopied": "Имя скопировано",
+  "copyNameFailed": "Не удалось скопировать имя",
   "loadingPages": "Загрузка страниц… осталось {count}",
   "page": "Страница",
   "selectionColors": "Цвета выделения",

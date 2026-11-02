@@ -8,6 +8,7 @@
   "components": "组件",
   "copyName": "复制名称",
   "nameCopied": "名称已复制",
+  "copyNameFailed": "无法复制名称",
   "loadingPages": "正在加载页面… 剩余 {count} 个",
   "page": "页面",
   "selectionColors": "所选颜色",

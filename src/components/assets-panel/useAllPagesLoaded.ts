@@ -1,50 +1,60 @@
-import { onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
+import { onBeforeUnmount, ref, type Ref } from 'vue'
 
 import { isFigPagePending } from '@open-pencil/core/io/formats/fig'
+import { useEditorEvent } from '@open-pencil/vue/editor/events'
 
 import { useEditorStore } from '@/app/editor/active-store'
 import { loadAllPages } from '@/app/editor/library/pages'
 
 /**
  * Loads every page of the open document in the background while the library tabs are shown, so
- * they can list the whole file. Stops when the tab closes or another document replaces the
- * graph; a failed page ends the load without surfacing as an unhandled rejection.
+ * they can list the whole file. A document that replaces the graph restarts the load for the
+ * new one; closing the tab stops it. A page that fails to load is logged and skipped, so the
+ * rest still load and nothing becomes an unhandled rejection.
  */
 export function useAllPagesLoaded(): { loading: Ref<boolean>; pending: Ref<number> } {
   const editor = useEditorStore()
   const loading = ref(false)
   const pending = ref(0)
   let unmounted = false
+  let run = 0
 
   const countPending = (graph: typeof editor.graph) =>
     graph.getPages().filter((page) => isFigPagePending(graph, page.id)).length
 
-  onMounted(async () => {
-    const graph = editor.graph
-    const cancelled = () => unmounted || editor.graph !== graph
+  async function start(graph: typeof editor.graph) {
+    const id = ++run
+    const current = () => id === run && !unmounted
     pending.value = countPending(graph)
-    if (pending.value === 0) return
-    loading.value = true
+    loading.value = pending.value > 0
+    if (!loading.value) return
     try {
       await loadAllPages(
         {
           graph,
           loadPageNodes: async (pageId) => {
-            await editor.loadPageNodes(pageId)
-            pending.value = countPending(graph)
+            try {
+              await editor.loadPageNodes(pageId)
+            } catch (error) {
+              console.warn('[Library] Loading a document page failed', pageId, error)
+            }
+            if (current()) pending.value = countPending(graph)
           }
         },
-        cancelled
+        () => !current()
       )
-    } catch (error) {
-      console.warn('[Library] Loading the document pages failed', error)
     } finally {
-      if (!unmounted) {
+      if (current()) {
         loading.value = false
         pending.value = 0
       }
     }
-  })
+  }
+
+  // The graph is replaced in place when a file is opened over this one, so the event, not the
+  // reference, says to load the new document's pages.
+  useEditorEvent('graph:replaced', () => void start(editor.graph))
+  void start(editor.graph)
 
   onBeforeUnmount(() => {
     unmounted = true

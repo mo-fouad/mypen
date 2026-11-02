@@ -4,8 +4,8 @@ import { expect, test, type Page } from '@playwright/test'
 
 import { CanvasHelper } from '#tests/helpers/canvas'
 
-/** Builds a two-page file in the editor, saves it, and reopens it so its pages load lazily. */
-async function openTwoPageFile(page: Page) {
+/** Builds a three-page file in the editor and returns its saved bytes. */
+async function saveThreePageFile(page: Page) {
   await page.evaluate(() => {
     const store = window.openPencil?.getStore?.()
     if (!store) throw new Error('OpenPencil store not initialized')
@@ -22,6 +22,12 @@ async function openTwoPageFile(page: Page) {
       name: 'lucide/x/16x16',
       width: 16,
       height: 16
+    })
+    const more = store.graph.createNode('CANVAS', store.graph.rootId, { name: 'More' })
+    store.graph.createNode('COMPONENT', more.id, {
+      name: 'Component/Card/Wide',
+      width: 200,
+      height: 80
     })
   })
   const picker = await page.evaluateHandle(() => {
@@ -43,6 +49,11 @@ async function openTwoPageFile(page: Page) {
     await picker.evaluate((handle) => handle.restore())
     await picker.dispose()
   }
+  return bytes
+}
+
+/** Opens saved bytes in the editor, so the file's pages load lazily. */
+async function openSaved(page: Page, bytes: number[]) {
   await page.evaluate(async (saved) => {
     const store = window.openPencil?.getStore?.()
     if (!store) throw new Error('Editor unavailable')
@@ -54,16 +65,31 @@ test('components tab lists components without icons and goes to one', async ({ p
   const canvas = new CanvasHelper(page)
   await page.goto('/?test')
   await canvas.waitForInit()
-  await openTwoPageFile(page)
+  const bytes = await saveThreePageFile(page)
+  await openSaved(page, bytes)
 
   await page.getByTestId('left-panel-components-tab').click()
   const panel = page.getByTestId('assets-panel')
+  // Every page has loaded, including the Icons page, before the icon filter is judged.
+  await expect(panel.getByTestId('assets-loading-pages')).toBeHidden()
+  const iconId = () =>
+    page.evaluate(() => {
+      const store = window.openPencil?.getStore?.()
+      return (
+        [...(store?.graph.nodes.values() ?? [])].find((node) => node.name === 'lucide/x/16x16')
+          ?.id ?? null
+      )
+    })
+  await expect.poll(iconId).not.toBeNull()
+  const icon = await iconId()
+
   const group = panel.getByRole('region', { name: 'Button' })
   await expect(group).toBeVisible()
   const tile = group.getByTestId('asset-item').filter({ hasText: 'Primary' })
   await expect(tile).toHaveCount(1)
-  await expect(panel).not.toContainText('x · 16x16')
-  await expect(panel.getByTestId('asset-item')).toHaveCount(1)
+  await expect(panel.getByRole('region', { name: 'Card' })).toBeVisible()
+  await expect(panel.locator(`[data-asset-id="${icon}"]`)).toHaveCount(0)
+  await expect(panel.getByTestId('asset-item')).toHaveCount(2)
 
   await tile.click()
   await expect
@@ -75,5 +101,20 @@ test('components tab lists components without icons and goes to one', async ({ p
       })
     )
     .toBe('Component/Button/Primary')
+  canvas.assertNoErrors()
+})
+
+test('components tab lists a file reopened while it is open', async ({ page }) => {
+  const canvas = new CanvasHelper(page)
+  await page.goto('/?test')
+  await canvas.waitForInit()
+  const bytes = await saveThreePageFile(page)
+  await page.getByTestId('left-panel-components-tab').click()
+  const panel = page.getByTestId('assets-panel')
+  await openSaved(page, bytes)
+
+  await expect(panel.getByRole('region', { name: 'Card' })).toBeVisible()
+  await expect(panel.getByTestId('assets-loading-pages')).toBeHidden()
+  await expect(panel.getByTestId('asset-item')).toHaveCount(2)
   canvas.assertNoErrors()
 })

@@ -8,6 +8,7 @@
   "components": "Componenti",
   "copyName": "Copia nome",
   "nameCopied": "Nome copiato",
+  "copyNameFailed": "Impossibile copiare il nome",
   "loadingPages": "Caricamento delle pagine… ne mancano {count}",
   "page": "Pagina",
   "selectionColors": "Colori della selezione",

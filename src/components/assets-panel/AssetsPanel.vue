@@ -60,6 +60,7 @@ type LocalAsset = {
 }
 
 type AssetGroup = {
+  key: string
   name: string
   assets: LocalAsset[]
 }
@@ -69,7 +70,7 @@ const libraryService = useLibraryService()
 const remoteAssets = libraryService.enabledAssets
 const { panels, commands } = useI18n()
 const { loading: loadingPages, pending: pendingPages } = useAllPagesLoaded()
-const { copy } = useClipboard({ legacy: true })
+const { copy, copied } = useClipboard({ legacy: true })
 const query = ref('')
 const assetView = ref<AssetView>('grid')
 const detailsOpen = ref(false)
@@ -179,9 +180,10 @@ const filteredAssets = computed(() => {
 const assetGroups = computed<AssetGroup[]>(() => {
   const groups = new Map<string, AssetGroup>()
   for (const asset of filteredAssets.value) {
-    const group = groups.get(asset.group) ?? { name: asset.group, assets: [] }
+    const key = asset.libraryId ? `library:${asset.libraryId}` : `local:${asset.group}`
+    const group = groups.get(key) ?? { key, name: asset.group, assets: [] }
     group.assets.push(asset)
-    groups.set(asset.group, group)
+    groups.set(key, group)
   }
   return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name))
 })
@@ -314,7 +316,8 @@ function onAssetClick(asset: LocalAsset) {
 
 async function copyName(asset: LocalAsset) {
   await copy(asset.name)
-  toast.info(panels.value.nameCopied)
+  if (copied.value) toast.info(panels.value.nameCopied)
+  else toast.error(panels.value.copyNameFailed)
 }
 
 function onAssetKeydown(event: KeyboardEvent, asset: LocalAsset) {
@@ -385,12 +388,7 @@ async function insertSelectedAsset() {
     </p>
 
     <div class="scrollbar-thin flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-2">
-      <section
-        v-for="group in assetGroups"
-        :key="group.name"
-        :aria-label="group.name"
-        class="mb-3"
-      >
+      <section v-for="group in assetGroups" :key="group.key" :aria-label="group.name" class="mb-3">
         <h2 class="mb-1 px-1 text-[11px] font-semibold text-muted">
           {{ group.name }}
         </h2>
