@@ -169,6 +169,17 @@ test('assets tab shows icons and images and goes to an image', async ({ page }) 
   // Components belong to the Components tab.
   await expect(panel.getByTestId('asset-item')).toHaveCount(0)
 
+  // Copy name copies the icon's full name.
+  await page
+    .context()
+    .grantPermissions(['clipboard-read', 'clipboard-write'])
+    .catch(() => undefined)
+  await icons.first().hover()
+  await panel.getByTestId('icon-copy-name').first().click()
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()).catch(() => null))
+    .toBe('lucide/x/16x16')
+
   const startPage = await page.evaluate(() => window.openPencil?.getStore?.().state.currentPageId)
   await images.first().click()
   await expect
@@ -185,5 +196,24 @@ test('assets tab shows icons and images and goes to an image', async ({ page }) 
   expect(startPage).not.toBe(
     await page.evaluate(() => window.openPencil?.getStore?.().state.currentPageId)
   )
+
+  canvas.assertNoErrors()
+})
+
+test('assets tab shows an image no layer uses as disabled', async ({ page }) => {
+  const canvas = new CanvasHelper(page)
+  await page.goto('/?test')
+  await canvas.waitForInit()
+  await page.evaluate(() => {
+    const store = window.openPencil?.getStore?.()
+    if (!store) throw new Error('OpenPencil store not initialized')
+    store.graph.images.set('fedcba9876543210fedcba9876543210fedcba98', new Uint8Array([1, 2, 3]))
+    store.requestRender()
+  })
+  await page.getByTestId('left-panel-assets-tab').click()
+  const image = page.getByTestId('assets-media-panel').getByTestId('image-item')
+  await expect(image).toHaveCount(1)
+  await expect(image).toHaveAttribute('aria-disabled', 'true')
+  await expect(image.getByTestId('image-copy-name')).toHaveCount(0)
   canvas.assertNoErrors()
 })

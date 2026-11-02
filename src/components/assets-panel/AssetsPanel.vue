@@ -321,6 +321,8 @@ async function copyName(asset: LocalAsset) {
 }
 
 function onAssetKeydown(event: KeyboardEvent, asset: LocalAsset) {
+  // Keys on the tile's own buttons (Copy name, Insert) belong to them.
+  if (event.target !== event.currentTarget) return
   if ((event.metaKey || event.ctrlKey) && event.code === 'Enter') {
     event.preventDefault()
     void openDetails(asset)

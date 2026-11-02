@@ -1,5 +1,13 @@
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
+import { groupBy } from 'es-toolkit'
+import {
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuPortal,
+  ContextMenuRoot,
+  ContextMenuTrigger
+} from 'reka-ui'
 import { computed } from 'vue'
 
 import { useI18n } from '@open-pencil/vue/i18n'
@@ -15,6 +23,8 @@ import { useAllPagesLoaded } from '@/components/assets-panel/useAllPagesLoaded'
 import AppButton from '@/components/ui/button/AppButton.vue'
 import AppCollapsible from '@/components/ui/collapsible/AppCollapsible.vue'
 import AppPlaceholder from '@/components/ui/feedback/AppPlaceholder.vue'
+import { useMenuUI } from '@/components/ui/menu/menu'
+import MenuScrollArea from '@/components/ui/menu/MenuScrollArea.vue'
 import Tip from '@/components/ui/overlay/Tip.vue'
 import { ASSET_ICON_THUMBNAIL_SIZE } from '@/constants'
 
@@ -22,6 +32,7 @@ const editor = useEditorStore()
 const { panels } = useI18n()
 const { loading: loadingPages, pending: pendingPages } = useAllPagesLoaded()
 const { copy, copied } = useClipboard({ legacy: true })
+const contextMenu = useMenuUI({ content: 'min-w-44' })
 const copyButton = {
   color: 'neutral' as const,
   variant: 'ghost' as const,
@@ -32,14 +43,8 @@ const copyButton = {
 const iconGroups = computed(() => {
   // Reading the version recomputes the lists as background page loads add icons and images.
   void editor.state.sceneVersion
-  const groups = new Map<string, ReturnType<typeof libraryItems>>()
-  for (const item of libraryItems(editor.graph)) {
-    if (item.kind !== 'icon') continue
-    const group = groups.get(item.group) ?? []
-    group.push(item)
-    groups.set(item.group, group)
-  }
-  return [...groups]
+  const icons = libraryItems(editor.graph).filter((item) => item.kind === 'icon')
+  return Object.entries(groupBy(icons, (item) => item.group))
     .map(([name, items]) => ({ name, items }))
     .sort((a, b) => a.name.localeCompare(b.name))
 })
@@ -86,25 +91,56 @@ function goToImage(firstId: string | null) {
         >
           <h2 class="mb-1 px-1 text-[11px] font-semibold text-muted">{{ group.name }}</h2>
           <div class="flex flex-wrap gap-1">
-            <Tip v-for="item in group.items" :key="item.id" :label="item.name">
-              <div
-                role="button"
-                tabindex="0"
-                data-test-id="icon-item"
-                :data-asset-id="item.id"
-                :aria-label="item.label"
-                class="rounded outline-none hover:bg-hover focus-visible:ring-1 focus-visible:ring-panel-focus"
-                @click="void editor.focusComponent(item.id)"
-                @keydown.enter.prevent="void editor.focusComponent(item.id)"
-                @keydown.space.prevent="void editor.focusComponent(item.id)"
-              >
-                <AssetThumbnail
-                  :node-id="item.id"
-                  :alt="item.label"
-                  :size="ASSET_ICON_THUMBNAIL_SIZE"
-                />
-              </div>
-            </Tip>
+            <ContextMenuRoot v-for="item in group.items" :key="item.id">
+              <ContextMenuTrigger as-child>
+                <div class="group/icon relative">
+                  <Tip :label="item.name">
+                    <div
+                      role="button"
+                      tabindex="0"
+                      data-test-id="icon-item"
+                      :data-asset-id="item.id"
+                      :aria-label="item.label"
+                      class="rounded outline-none hover:bg-hover focus-visible:ring-1 focus-visible:ring-panel-focus"
+                      @click="void editor.focusComponent(item.id)"
+                      @keydown.enter.self.prevent="void editor.focusComponent(item.id)"
+                      @keydown.space.self.prevent="void editor.focusComponent(item.id)"
+                    >
+                      <AssetThumbnail
+                        :node-id="item.id"
+                        :alt="item.label"
+                        :size="ASSET_ICON_THUMBNAIL_SIZE"
+                      />
+                    </div>
+                  </Tip>
+                  <Tip :label="panels.copyName">
+                    <AppButton
+                      v-bind="copyButton"
+                      data-test-id="icon-copy-name"
+                      :aria-label="panels.copyName"
+                      class="absolute -top-1 -right-1 size-4 opacity-0 group-focus-within/icon:opacity-100 group-hover/icon:opacity-100"
+                      @pointerdown.stop
+                      @click.stop="copyName(item.name)"
+                    >
+                      <icon-lucide-copy class="size-2.5" />
+                    </AppButton>
+                  </Tip>
+                </div>
+              </ContextMenuTrigger>
+              <ContextMenuPortal>
+                <ContextMenuContent :class="contextMenu.content">
+                  <MenuScrollArea>
+                    <ContextMenuItem
+                      data-test-id="icon-context-copy-name"
+                      :class="contextMenu.item"
+                      @select="void copyName(item.name)"
+                    >
+                      {{ panels.copyName }}
+                    </ContextMenuItem>
+                  </MenuScrollArea>
+                </ContextMenuContent>
+              </ContextMenuPortal>
+            </ContextMenuRoot>
           </div>
         </section>
         <AppPlaceholder
@@ -121,37 +157,52 @@ function goToImage(firstId: string | null) {
 
       <AppCollapsible :label="panels.images" :open="true" data-test-id="assets-images-section">
         <div class="grid grid-cols-3 gap-2">
-          <div
-            v-for="image in images"
-            :key="image.hash"
-            role="button"
-            data-test-id="image-item"
-            :data-image-hash="image.hash"
-            :tabindex="image.firstId ? 0 : -1"
-            :aria-disabled="!image.firstId"
-            :aria-label="image.name ?? image.hash"
-            :class="[
-              'group/image relative aspect-square rounded p-0.5 outline-none focus-visible:ring-1 focus-visible:ring-panel-focus',
-              image.firstId ? 'cursor-pointer hover:bg-hover' : 'cursor-default opacity-60'
-            ]"
-            @click="goToImage(image.firstId)"
-            @keydown.enter.prevent="goToImage(image.firstId)"
-            @keydown.space.prevent="goToImage(image.firstId)"
-          >
-            <AssetImage :hash="image.hash" :alt="image.name ?? image.hash" />
-            <Tip v-if="image.name" :label="panels.copyName">
-              <AppButton
-                v-bind="copyButton"
-                data-test-id="image-copy-name"
-                :aria-label="panels.copyName"
-                class="absolute top-1 right-1 opacity-0 group-focus-within/image:opacity-100 group-hover/image:opacity-100"
-                @pointerdown.stop
-                @click.stop="image.name && copyName(image.name)"
+          <ContextMenuRoot v-for="image in images" :key="image.hash">
+            <ContextMenuTrigger as-child>
+              <div
+                role="button"
+                data-test-id="image-item"
+                :data-image-hash="image.hash"
+                :tabindex="image.firstId ? 0 : -1"
+                :aria-disabled="!image.firstId"
+                :aria-label="image.name ?? image.hash"
+                :class="[
+                  'group/image relative aspect-square rounded p-0.5 outline-none focus-visible:ring-1 focus-visible:ring-panel-focus',
+                  image.firstId ? 'cursor-pointer hover:bg-hover' : 'cursor-default opacity-60'
+                ]"
+                @click="goToImage(image.firstId)"
+                @keydown.enter.self.prevent="goToImage(image.firstId)"
+                @keydown.space.self.prevent="goToImage(image.firstId)"
               >
-                <icon-lucide-copy class="size-3" />
-              </AppButton>
-            </Tip>
-          </div>
+                <AssetImage :hash="image.hash" :alt="image.name ?? image.hash" />
+                <Tip v-if="image.name" :label="panels.copyName">
+                  <AppButton
+                    v-bind="copyButton"
+                    data-test-id="image-copy-name"
+                    :aria-label="panels.copyName"
+                    class="absolute top-1 right-1 opacity-0 group-focus-within/image:opacity-100 group-hover/image:opacity-100"
+                    @pointerdown.stop
+                    @click.stop="image.name && copyName(image.name)"
+                  >
+                    <icon-lucide-copy class="size-3" />
+                  </AppButton>
+                </Tip>
+              </div>
+            </ContextMenuTrigger>
+            <ContextMenuPortal v-if="image.name">
+              <ContextMenuContent :class="contextMenu.content">
+                <MenuScrollArea>
+                  <ContextMenuItem
+                    data-test-id="image-context-copy-name"
+                    :class="contextMenu.item"
+                    @select="image.name && void copyName(image.name)"
+                  >
+                    {{ panels.copyName }}
+                  </ContextMenuItem>
+                </MenuScrollArea>
+              </ContextMenuContent>
+            </ContextMenuPortal>
+          </ContextMenuRoot>
         </div>
         <AppPlaceholder
           v-if="images.length === 0 && !loadingPages"
