@@ -19,7 +19,7 @@ if pgrep -fq "$DEST/Contents/MacOS/"; then
   for _ in {1..20}; do pgrep -fq "$DEST/Contents/MacOS/" || break; sleep 0.5; done
 fi
 
-echo "Installing to $DEST…"
+echo "Installing to ${DEST}…"
 rm -rf "$DEST"
 ditto "$APP" "$DEST"
 codesign --verify "$DEST"
