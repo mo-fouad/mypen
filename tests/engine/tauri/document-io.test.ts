@@ -56,6 +56,29 @@ describe('Tauri document IO helpers', () => {
     expect(savedVersions).toEqual([42])
   })
 
+  test('marks the write time again when a slow write finishes', async () => {
+    let writeFinishedAt = 0
+    await mockTauriIPC(async () => {
+      await Bun.sleep(30)
+      writeFinishedAt = Date.now()
+      return null
+    })
+    const writeTimes: number[] = []
+    const write = createDocumentWriter({
+      state: { documentName: 'Document' },
+      getFilePath: () => '/tmp/document.fig',
+      getFileHandle: () => null,
+      getStorageBinding: () => null,
+      setSavedVersion: () => undefined,
+      setLastWriteTime: (time) => writeTimes.push(time)
+    })
+
+    await write(new Uint8Array([1]), 1)
+
+    // The file watcher must see our own save as recent however long the write took.
+    expect(writeTimes.at(-1)).toBeGreaterThanOrEqual(writeFinishedAt)
+  })
+
   test('keeps a completed write successful when recovery cleanup fails', async () => {
     await mockTauriIPC(() => null)
     const savedVersions: number[] = []

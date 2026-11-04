@@ -26,6 +26,9 @@ export function createDocumentWriter({
   onWriteSuccess
 }: DocumentWriterOptions) {
   async function finishWrite(version: number): Promise<true> {
+    // A large file can take seconds to write; stamp the end too, so the file watcher does not
+    // mistake this save for an outside change and reload the document over the open one.
+    setLastWriteTime(Date.now())
     setSavedVersion(version)
     try {
       await onWriteSuccess?.(version)
