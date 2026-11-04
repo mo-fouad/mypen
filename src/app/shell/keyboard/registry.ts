@@ -9,6 +9,7 @@ import { editorCommandMetadata, type EditorCommandId } from '@open-pencil/vue/ed
 
 import { isCloudBinding, openVersionDialog } from '@/app/cloud/integration'
 import { useComments } from '@/app/comments/use'
+import { copySelectionAsPNG } from '@/app/editor/clipboard/png'
 import {
   copySelectionProperties,
   pasteClipboardProperties
@@ -198,6 +199,11 @@ export function registerKeyboardShortcuts(options: KeyboardShortcutOptions) {
       id: 'copy-properties',
       keys: '$mod+Alt+KeyC',
       run: ({ store }) => void copySelectionProperties(store)
+    },
+    {
+      id: 'copy-as-png',
+      keys: '$mod+Shift+KeyC',
+      run: ({ store }) => void copySelectionAsPNG(store)
     },
     {
       id: 'paste-properties',
