@@ -87,7 +87,6 @@ const onViewportResize = (width: number, height: number) => {
 }
 
 const { updateCursor } = useCanvasCollaborationAwareness(store)
-const { selectAtContextPoint } = createCanvasContextSelection(canvasRef, store)
 
 const shouldSuspendRender = () =>
   store.state.preparation !== null &&
@@ -145,6 +144,12 @@ const {
   getRenderState,
   onViewportResize
 })
+const { selectAtContextPoint } = createCanvasContextSelection(
+  canvasRef,
+  store,
+  (cx, cy) =>
+    hitTestComponentLabel(cx, cy) ?? hitTestSectionTitle(cx, cy) ?? hitTestFrameTitle(cx, cy)
+)
 const {
   cursorOverride,
   canvasLabelEdit,

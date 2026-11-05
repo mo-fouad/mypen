@@ -119,6 +119,7 @@ export function useCanvasContextMenu(
         }
       )
     }
-    return [...entries, { separator: true }, copyPasteAsEntry(editor, actions, labels.value)]
+    // Figma keeps Copy/Paste as with Copy and Paste, in the menu's first section.
+    return [copyPasteAsEntry(editor, actions, labels.value), ...entries]
   })
 }

@@ -1,12 +1,14 @@
 import type { Ref } from 'vue'
 
 import { hitTestGuides } from '@open-pencil/core/canvas'
+import type { SceneNode } from '@open-pencil/scene-graph'
 
 import type { EditorStore } from '@/app/editor/active-store'
 
 export function createCanvasContextSelection(
   canvasRef: Ref<HTMLCanvasElement | null>,
-  store: EditorStore
+  store: EditorStore,
+  hitTestLabel: (cx: number, cy: number) => SceneNode | null
 ) {
   function selectAtContextPoint(event: MouseEvent) {
     const canvas = canvasRef.value
@@ -36,6 +38,12 @@ export function createCanvasContextSelection(
     }
     store.setSelectedGuide(null)
     const { x: cx, y: cy } = store.screenToCanvas(sx, sy)
+    // A layer's name above it selects that layer, as a left click on it does.
+    const labelled = hitTestLabel(cx, cy)
+    if (labelled) {
+      if (!store.state.selectedIds.has(labelled.id)) store.select([labelled.id])
+      return
+    }
     store.selectAtPoint(cx, cy)
   }
 
